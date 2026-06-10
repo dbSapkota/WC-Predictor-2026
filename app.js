@@ -1603,7 +1603,7 @@
 
   function attachEvents() {
     const versionBadge = document.getElementById("appVersionBadge");
-    if (versionBadge) versionBadge.textContent = "v2.25 · overflow-safe cards";
+    if (versionBadge) versionBadge.textContent = "v2.25";
     ensureDeleteBracketButton();
     els.nameInput.value = state.playerName;
     els.joinBtn.addEventListener("click", joinBracket);
