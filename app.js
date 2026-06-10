@@ -145,6 +145,7 @@
   function normalizeConfig(data) {
     return {
       locked: Boolean(data?.locked),
+      lockAt: typeof data?.lockAt === "string" ? data.lockAt : "",
       labelOverrides: data?.labelOverrides || {},
       results: cleanPicksRaw(data?.results || {}),
       resultScores: cleanScoreMap(data?.resultScores || {}),
@@ -165,6 +166,55 @@
   function setMessage(text, type = "") {
     els.joinMessage.textContent = text;
     els.joinMessage.className = `message ${type}`.trim();
+  }
+
+  function lockTimestamp() {
+    if (!state.config.lockAt) return null;
+    const ts = Date.parse(state.config.lockAt);
+    return Number.isFinite(ts) ? ts : null;
+  }
+
+  function deadlineHasPassed() {
+    const ts = lockTimestamp();
+    return ts !== null && Date.now() >= ts;
+  }
+
+  function predictionsAreLocked() {
+    return Boolean(state.config.locked || deadlineHasPassed());
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "not set";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "invalid date";
+    return d.toLocaleString([], {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  }
+
+  function toDatetimeLocalValue(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function fromDatetimeLocalValue(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  }
+
+  function lockStatusText() {
+    if (state.config.locked) return "Predictions are manually locked. You can view your bracket, but not edit it.";
+    if (deadlineHasPassed()) return `Predictions are locked because the deadline passed: ${formatDateTime(state.config.lockAt)}.`;
+    if (state.config.lockAt) return `Predictions are open until ${formatDateTime(state.config.lockAt)}.`;
+    return "Predictions are open. Remember to save after making changes.";
   }
 
   function clearCurrentPlayer() {
@@ -196,6 +246,50 @@
     actionsRow.appendChild(btn);
     els.deleteBracketBtn = btn;
     return btn;
+  }
+
+  function ensureDeadlineControls() {
+    if (document.getElementById("lockDeadlineInput")) return;
+    if (!els.labelEditor) return;
+    const wrap = document.createElement("div");
+    wrap.className = "lock-deadline-card";
+    wrap.innerHTML = `
+      <div>
+        <label>Auto-lock deadline
+          <input id="lockDeadlineInput" type="datetime-local" />
+        </label>
+        <p id="lockDeadlineStatus" class="muted lock-deadline-status"></p>
+      </div>
+      <div class="deadline-actions">
+        <button id="saveLockDeadlineBtn" type="button" class="primary">Save deadline</button>
+        <button id="clearLockDeadlineBtn" type="button" class="secondary">Clear deadline</button>
+      </div>
+    `;
+    els.labelEditor.parentNode.insertBefore(wrap, els.labelEditor);
+
+    wrap.querySelector("#saveLockDeadlineBtn").addEventListener("click", () => {
+      const raw = wrap.querySelector("#lockDeadlineInput").value;
+      const lockAt = fromDatetimeLocalValue(raw);
+      if (!lockAt) {
+        alert("Choose a valid date and time, or use Clear deadline.");
+        return;
+      }
+      saveConfig({ lockAt });
+    });
+
+    wrap.querySelector("#clearLockDeadlineBtn").addEventListener("click", () => saveConfig({ lockAt: "" }));
+  }
+
+  function renderDeadlineControls() {
+    ensureDeadlineControls();
+    const input = document.getElementById("lockDeadlineInput");
+    const status = document.getElementById("lockDeadlineStatus");
+    if (input) input.value = toDatetimeLocalValue(state.config.lockAt);
+    if (status) {
+      status.textContent = state.config.lockAt
+        ? `Deadline: ${formatDateTime(state.config.lockAt)}. Current status: ${predictionsAreLocked() ? "locked" : "open"}.`
+        : "No automatic deadline set. Use the manual lock button or set a date/time here.";
+    }
   }
 
   function roundOfMatch(matchId) {
@@ -389,7 +483,7 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "choice";
-      btn.disabled = team.pending || (isUser && state.config.locked);
+      btn.disabled = team.pending || (isUser && predictionsAreLocked());
       btn.dataset.matchId = matchId;
       btn.dataset.teamId = team.id;
 
@@ -409,7 +503,7 @@
             state.officialDraft = cleanPicks(state.officialDraft);
             state.officialScoreDraft = cleanScoreMap(state.officialScoreDraft);
             renderAdminTools();
-          } else if (!state.config.locked) {
+          } else if (!predictionsAreLocked()) {
             state.userPicks[matchId] = team.id;
             state.userPicks = cleanPicks(state.userPicks);
             state.userScorePredictions = cleanScoreMap(state.userScorePredictions);
@@ -425,7 +519,7 @@
       isUser,
       isViewer,
       compareResults,
-      disabled: !bothTeamsKnown || isViewer || (isUser && state.config.locked)
+      disabled: !bothTeamsKnown || isViewer || (isUser && predictionsAreLocked())
     }));
 
     if (compareResults && state.config.results?.[matchId]) {
@@ -471,7 +565,7 @@
         };
         if (options.isAdmin) {
           state.officialScoreDraft[matchId] = nextScore;
-        } else if (options.isUser && !state.config.locked) {
+        } else if (options.isUser && !predictionsAreLocked()) {
           state.userScorePredictions[matchId] = nextScore;
         }
       });
@@ -503,12 +597,13 @@
 
   function renderAdminTools() {
     if (!state.adminUnlocked) return;
+    renderDeadlineControls();
     renderLabels();
     els.extraRulesInput.value = state.config.extraRulesText || "";
     state.officialDraft = cleanPicks(state.officialDraft || state.config.results || {});
     state.officialScoreDraft = cleanScoreMap(state.officialScoreDraft || state.config.resultScores || {});
     renderBracket(els.officialBracket, state.officialDraft, state.officialScoreDraft, { mode: "admin" });
-    els.toggleLockBtn.textContent = state.config.locked ? "Unlock predictions" : "Lock predictions";
+    els.toggleLockBtn.textContent = state.config.locked ? "Unlock manual lock" : "Lock now manually";
   }
 
   function medalForRank(rank) {
@@ -547,25 +642,15 @@
 
     els.leaderboard.className = "leaderboard leaderboard-layout";
     const otherRows = rows.filter(row => !state.playerId || row.playerId !== state.playerId);
-    const otherOptions = otherRows.map(row => `<option value="${escapeHtml(row.playerId)}">${escapeHtml(row.name)}</option>`).join("");
     const quickButtons = otherRows.map(row => `
-      <button type="button" class="member-pill" data-view-player="${escapeHtml(row.playerId)}">
+      <button type="button" class="member-pill" data-view-player="${escapeHtml(row.playerId)}" aria-label="View ${escapeHtml(row.name)}'s picks">
         <span>${escapeHtml(row.name)}</span>
         <small>${row.score} pts</small>
       </button>
     `).join("");
 
     const viewerPanel = otherRows.length
-      ? `
-        <div class="viewer-select-row">
-          <select id="otherPicksSelect" aria-label="Select another player to view">
-            <option value="">Choose a friend…</option>
-            ${otherOptions}
-          </select>
-          <button type="button" id="viewOtherPicksBtn" class="primary">View picks</button>
-        </div>
-        <div class="member-list">${quickButtons}</div>
-      `
+      ? `<div class="member-list">${quickButtons}</div>`
       : `
         <div class="empty-state">
           <strong>No other brackets yet.</strong>
@@ -574,9 +659,9 @@
       `;
 
     const body = rows.map((row, index) => `
-      <tr class="leaderboard-row" data-view-player="${escapeHtml(row.playerId)}" tabindex="0" title="Click to view ${escapeHtml(row.name)}'s bracket">
+      <tr class="leaderboard-row">
         <td>${medalForRank(index + 1)}</td>
-        <td><button type="button" class="leaderboard-name" data-view-player="${escapeHtml(row.playerId)}">${escapeHtml(row.name)}</button></td>
+        <td><span class="leaderboard-name-static">${escapeHtml(row.name)}</span></td>
         <td><strong>${row.score}</strong><div class="breakdown">W ${row.winnerPoints} · Score ${row.exactPoints} · GD ${row.gdPoints}</div></td>
         <td>${escapeHtml(row.champion)}</td>
       </tr>
@@ -588,7 +673,7 @@
           <div>
             <p class="eyebrow">League view</p>
             <h3>View other's picks</h3>
-            <p class="muted">Select another username to open their full bracket and score predictions.</p>
+            <p class="muted">Click a username below to open their full bracket and score predictions.</p>
           </div>
         </div>
         ${viewerPanel}
@@ -608,18 +693,7 @@
       </section>
     `;
 
-    const select = els.leaderboard.querySelector("#otherPicksSelect");
-    const viewButton = els.leaderboard.querySelector("#viewOtherPicksBtn");
-    if (select && viewButton) {
-      viewButton.addEventListener("click", () => {
-        if (select.value) openPredictionViewer(select.value);
-      });
-      select.addEventListener("change", () => {
-        if (select.value) openPredictionViewer(select.value);
-      });
-    }
-
-    els.leaderboard.querySelectorAll("[data-view-player]").forEach(el => {
+    els.leaderboard.querySelectorAll(".member-pill[data-view-player]").forEach(el => {
       el.addEventListener("click", event => {
         event.preventDefault();
         event.stopPropagation();
@@ -778,10 +852,8 @@
       const scored = scoreEntry(state.userPicks, state.userScorePredictions);
       els.yourTotalPoints.textContent = String(scored.total);
       els.playerTitle.textContent = `${state.playerName}'s bracket`;
-      els.lockNotice.textContent = state.config.locked
-        ? "Predictions are locked. You can view your bracket, but not edit it."
-        : "Predictions are open. Remember to save after making changes.";
-      els.saveBtn.disabled = state.config.locked;
+      els.lockNotice.textContent = lockStatusText();
+      els.saveBtn.disabled = predictionsAreLocked();
       renderBracket(els.bracket, state.userPicks, state.userScorePredictions, { mode: "user", compareResults: true });
     }
 
@@ -808,7 +880,7 @@
 
       const initial = await state.gameRef.get();
       if (!initial.exists) {
-        await state.gameRef.set({ locked: false, labelOverrides: {}, results: {}, resultScores: {}, extraRulesText: "", updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        await state.gameRef.set({ locked: false, lockAt: "", labelOverrides: {}, results: {}, resultScores: {}, extraRulesText: "", updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       }
 
       state.gameRef.onSnapshot(snapshot => {
@@ -914,7 +986,7 @@
 
   async function savePrediction() {
     if (!state.playerId || !state.playerName || !state.playerPinHash) return setMessage("Load your bracket with username + PIN first.", "error");
-    if (state.config.locked) return setMessage("Predictions are locked.", "error");
+    if (predictionsAreLocked()) return setMessage(lockStatusText(), "error");
 
     const existing = state.allPredictions.find(entry => entry.playerId === state.playerId || entry.usernameKey === state.playerId);
     if (existing?.pinHash && existing.pinHash !== state.playerPinHash) {
@@ -1079,7 +1151,7 @@
 
   function attachEvents() {
     const versionBadge = document.getElementById("appVersionBadge");
-    if (versionBadge) versionBadge.textContent = "v2.7 · delete bracket";
+    if (versionBadge) versionBadge.textContent = "v2.8 · deadline lock";
     ensureDeleteBracketButton();
     els.nameInput.value = state.playerName;
     els.joinBtn.addEventListener("click", joinBracket);
@@ -1111,6 +1183,9 @@
     window.addEventListener("resize", () => {
       document.querySelectorAll(".knockout-board").forEach(board => scheduleConnectorDraw(board));
     });
+    setInterval(() => {
+      if (state.config.lockAt) renderAll();
+    }, 30000);
 
     els.adminUnlockBtn.addEventListener("click", () => {
       const entered = els.adminKeyInput.value;
