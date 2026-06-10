@@ -8,7 +8,7 @@
   Firebase config values identify your project, but are not passwords.
 */
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCoVTuhtvQnbsZc9wesuddzVEtdDADR1sIe",
+  apiKey: "AIzaSyCoVTuhtvQnbsZc9wesuddzVEtdDADR1sI",
   authDomain: "wc-predictor-2026-dbb39.firebaseapp.com",
   projectId: "wc-predictor-2026-dbb39",
   storageBucket: "wc-predictor-2026-dbb39.firebasestorage.app",
