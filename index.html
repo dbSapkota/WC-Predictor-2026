@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>World Cup 2026 Bracket + Score Predictor</title>
+  <meta name="description" content="A small online FIFA World Cup 2026 Round of 32 bracket and score predictor for friends." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Friendly predictor · no betting · up to 8 people</p>
+      <h1>World Cup 2026 Knockout Predictor</h1>
+      <p class="subtitle">Pick every winner from the Round of 32 to the Final, predict each score, save your bracket online, and compare total points with your friends.</p>
+    </div>
+    <div class="hero-actions">
+      <span id="appVersionBadge" class="version-badge">v2.2 · score predictor + knockout tree</span>
+      <button id="viewRulesBtn" class="secondary">View rules</button>
+      <div class="status-card">
+        <span id="connectionDot" class="dot offline"></span>
+        <span id="connectionStatus">Demo mode</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" id="joinPanel">
+      <h2>Join / load your bracket</h2>
+      <p class="muted">Use the same name and private PIN to reopen your bracket later. The PIN is only used in your browser to find your saved entry.</p>
+      <div class="form-grid">
+        <label>
+          Display name
+          <input id="nameInput" maxlength="40" placeholder="Dixant" autocomplete="name" />
+        </label>
+        <label>
+          Private PIN
+          <input id="pinInput" maxlength="24" placeholder="4+ characters" type="password" autocomplete="current-password" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="joinBtn" class="primary">Load my bracket</button>
+        <button id="copyLinkBtn" class="secondary">Copy share link</button>
+      </div>
+      <p id="joinMessage" class="message"></p>
+    </section>
+
+    <section class="panel compact hidden" id="playerPanel">
+      <div>
+        <h2 id="playerTitle">Your bracket</h2>
+        <p class="muted" id="lockNotice">Predictions are open.</p>
+        <p class="muted tiny-note" id="treeVersionNotice">You are on the score-predictor / knockout-tree version.</p>
+      </div>
+      <div class="score-pill" title="Updates when official results are entered">
+        <span>Your total</span>
+        <strong id="yourTotalPoints">0</strong>
+      </div>
+      <div class="actions">
+        <button id="saveBtn" class="primary">Save prediction</button>
+        <button id="resetBtn" class="secondary">Reset picks</button>
+      </div>
+    </section>
+
+    <section class="bracket-wrap hidden" id="bracketSection">
+      <div class="bracket-headline">
+        <div>
+          <p class="eyebrow">Knockout stage</p>
+          <h2>Round of 32 → Final</h2>
+        </div>
+        <p class="muted">Each match has a winner pick and a score prediction. You can still predict a tied score and choose a winner for penalties.</p>
+      </div>
+      <div id="bracket" class="bracket knockout-board"></div>
+    </section>
+
+    <section class="panel hidden" id="leaderboardSection">
+      <div class="section-header">
+        <div>
+          <h2>Leaderboard</h2>
+          <p class="muted">Total points include winner, exact score, and goal-difference points. Use <strong>View rules</strong> for the full scoring details.</p>
+        </div>
+        <div class="actions">
+          <button id="viewRulesBtn2" class="secondary">View rules</button>
+          <button id="exportCsvBtn" class="secondary">Export CSV</button>
+        </div>
+      </div>
+      <div id="leaderboard" class="leaderboard empty">No predictions yet.</div>
+    </section>
+
+    <section class="panel admin-panel" id="adminPanel">
+      <details>
+        <summary>Admin tools</summary>
+        <p class="muted">For a small private friend group. This is convenient, not high-security. Do not use it for paid games.</p>
+        <div class="form-grid admin-login">
+          <label>
+            Admin passphrase
+            <input id="adminKeyInput" type="password" placeholder="Set this in firebase-config.js" />
+          </label>
+          <button id="adminUnlockBtn" class="secondary">Unlock admin</button>
+        </div>
+        <div id="adminControls" class="hidden">
+          <hr />
+          <div class="section-header">
+            <div>
+              <h3>Game settings</h3>
+              <p class="muted">Lock predictions after your deadline. Edit labels when the actual Round of 32 teams are known.</p>
+            </div>
+            <div class="actions">
+              <button id="toggleLockBtn" class="secondary">Toggle lock</button>
+              <button id="saveLabelsBtn" class="primary">Save labels</button>
+            </div>
+          </div>
+          <div id="labelEditor" class="label-editor"></div>
+
+          <hr />
+          <div class="section-header">
+            <div>
+              <h3>Rules text</h3>
+              <p class="muted">Add extra rules, tie-breakers, deadlines, or house notes. These appear inside the View rules popup.</p>
+            </div>
+            <button id="saveRulesBtn" class="primary">Save rules text</button>
+          </div>
+          <label>
+            Extra rules / notes
+            <textarea id="extraRulesInput" rows="5" placeholder="Example: Tie-breaker: closest Final total goals."></textarea>
+          </label>
+
+          <hr />
+          <div class="section-header">
+            <div>
+              <h3>Official results</h3>
+              <p class="muted">Select actual winners and enter official scores as games finish. The leaderboard updates automatically.</p>
+            </div>
+            <button id="saveResultsBtn" class="primary">Save official results</button>
+          </div>
+          <div id="officialBracket" class="bracket knockout-board admin-bracket"></div>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <dialog id="rulesDialog" class="rules-dialog">
+    <div class="dialog-card">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Scoring</p>
+          <h2>Rules</h2>
+        </div>
+        <button id="closeRulesBtn" class="secondary">Close</button>
+      </div>
+      <div id="rulesContent" class="rules-content"></div>
+    </div>
+  </dialog>
+
+  <footer>
+    <p>Built for a private, friendly World Cup bracket game. Team labels can be changed without breaking saved picks.</p>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
