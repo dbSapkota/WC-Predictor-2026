@@ -147,6 +147,10 @@
       locked: Boolean(data?.locked),
       lockAt: typeof data?.lockAt === "string" ? data.lockAt : "",
       labelOverrides: data?.labelOverrides || {},
+      codeOverrides: data?.codeOverrides || {},
+      // Kept only for backwards compatibility with older saved data.
+      // New versions use 3-letter country codes instead of manual flag emojis.
+      flagOverrides: data?.flagOverrides || {},
       results: cleanPicksRaw(data?.results || {}),
       resultScores: cleanScoreMap(data?.resultScores || {}),
       extraRulesText: String(data?.extraRulesText || "")
@@ -305,7 +309,201 @@
   }
 
   function labelForTeam(teamId) {
-    return state.config.labelOverrides?.[teamId] || BASE_LABELS[teamId] || teamId;
+    const manualName = String(state.config.labelOverrides?.[teamId] || "").trim();
+    if (manualName) return manualName;
+
+    const manualCode = normalizeCountryCode(state.config.codeOverrides?.[teamId]);
+    if (manualCode) return countryNameFromCode(manualCode) || manualCode;
+
+    // Placeholder display until the actual 2026 knockout teams are known.
+    return "USA";
+  }
+
+  function normalizeCountryCode(value) {
+    return String(value || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, 3);
+  }
+
+  function normalizeCountryKey(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/&/g, " and ")
+      .replace(/\./g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function codeForTeam(teamId) {
+    const id = String(teamId || "").trim().toUpperCase();
+    if (id === "TBD" || /^W\d+$/.test(id)) return "TBD";
+
+    const manual = normalizeCountryCode(state.config.codeOverrides?.[teamId]);
+    if (manual) return manual;
+
+    const detected = countryCodeFromLabel(labelForTeam(teamId));
+    return detected || "USA";
+  }
+
+  function countryRecordFromCode(code) {
+    return COUNTRY_BY_CODE[normalizeCountryCode(code)] || null;
+  }
+
+  function countryNameFromCode(code) {
+    return countryRecordFromCode(code)?.name || "";
+  }
+
+  function flagForTeam(teamId) {
+    const flagFromCode = flagEmojiFromCode(codeForTeam(teamId));
+    if (flagFromCode) return flagFromCode;
+
+    // Backwards compatibility for brackets created with the older manual-flag field.
+    const oldManualFlag = state.config.flagOverrides?.[teamId];
+    if (oldManualFlag && String(oldManualFlag).trim()) return String(oldManualFlag).trim();
+
+    return "🏳️";
+  }
+
+  function flagEmojiFromCode(code) {
+    return countryRecordFromCode(code)?.flag || "";
+  }
+
+  function countryCodeFromFlag(flag) {
+    return COUNTRY_CODE_BY_FLAG[String(flag || "").trim()] || "";
+  }
+
+  function countryCodeFromLabel(label) {
+    const raw = String(label || "").trim();
+    const normalizedCode = normalizeCountryCode(raw);
+    if (normalizedCode.length === 3 && countryRecordFromCode(normalizedCode)) return normalizedCode;
+
+    return COUNTRY_NAME_TO_CODE[normalizeCountryKey(raw)] || "";
+  }
+
+  const COUNTRY_RECORDS = [
+    { code: "TBD", name: "TBD", flag: "🏳️", aliases: ["To Be Determined", "Pending", "Winner", "Winner TBD"] },
+    { code: "USA", name: "United States", flag: "🇺🇸", aliases: ["USA", "US", "United States of America", "America"] },
+    { code: "MEX", name: "Mexico", flag: "🇲🇽" },
+    { code: "CAN", name: "Canada", flag: "🇨🇦" },
+    { code: "CRC", name: "Costa Rica", flag: "🇨🇷" },
+    { code: "PAN", name: "Panama", flag: "🇵🇦" },
+    { code: "JAM", name: "Jamaica", flag: "🇯🇲" },
+    { code: "HON", name: "Honduras", flag: "🇭🇳" },
+    { code: "SLV", name: "El Salvador", flag: "🇸🇻" },
+    { code: "GUA", name: "Guatemala", flag: "🇬🇹" },
+    { code: "HAI", name: "Haiti", flag: "🇭🇹" },
+    { code: "TRI", name: "Trinidad and Tobago", flag: "🇹🇹", aliases: ["Trinidad", "Tobago"] },
+    { code: "CUB", name: "Cuba", flag: "🇨🇺" },
+    { code: "DOM", name: "Dominican Republic", flag: "🇩🇴" },
+
+    { code: "ARG", name: "Argentina", flag: "🇦🇷" },
+    { code: "BRA", name: "Brazil", flag: "🇧🇷" },
+    { code: "URU", name: "Uruguay", flag: "🇺🇾" },
+    { code: "COL", name: "Colombia", flag: "🇨🇴" },
+    { code: "ECU", name: "Ecuador", flag: "🇪🇨" },
+    { code: "CHI", name: "Chile", flag: "🇨🇱" },
+    { code: "PER", name: "Peru", flag: "🇵🇪" },
+    { code: "PAR", name: "Paraguay", flag: "🇵🇾" },
+    { code: "VEN", name: "Venezuela", flag: "🇻🇪" },
+    { code: "BOL", name: "Bolivia", flag: "🇧🇴" },
+
+    { code: "ENG", name: "England", flag: "🏴" },
+    { code: "SCO", name: "Scotland", flag: "🏴" },
+    { code: "WAL", name: "Wales", flag: "🏴" },
+    { code: "NIR", name: "Northern Ireland", flag: "🇬🇧" },
+    { code: "IRL", name: "Republic of Ireland", flag: "🇮🇪", aliases: ["Ireland"] },
+    { code: "FRA", name: "France", flag: "🇫🇷" },
+    { code: "ESP", name: "Spain", flag: "🇪🇸" },
+    { code: "GER", name: "Germany", flag: "🇩🇪", aliases: ["Deutschland"] },
+    { code: "ITA", name: "Italy", flag: "🇮🇹" },
+    { code: "POR", name: "Portugal", flag: "🇵🇹" },
+    { code: "NED", name: "Netherlands", flag: "🇳🇱", aliases: ["Holland"] },
+    { code: "BEL", name: "Belgium", flag: "🇧🇪" },
+    { code: "CRO", name: "Croatia", flag: "🇭🇷" },
+    { code: "SUI", name: "Switzerland", flag: "🇨🇭" },
+    { code: "DEN", name: "Denmark", flag: "🇩🇰" },
+    { code: "POL", name: "Poland", flag: "🇵🇱" },
+    { code: "SWE", name: "Sweden", flag: "🇸🇪" },
+    { code: "NOR", name: "Norway", flag: "🇳🇴" },
+    { code: "FIN", name: "Finland", flag: "🇫🇮" },
+    { code: "AUT", name: "Austria", flag: "🇦🇹" },
+    { code: "CZE", name: "Czech Republic", flag: "🇨🇿", aliases: ["Czechia"] },
+    { code: "SVK", name: "Slovakia", flag: "🇸🇰" },
+    { code: "SVN", name: "Slovenia", flag: "🇸🇮" },
+    { code: "SRB", name: "Serbia", flag: "🇷🇸" },
+    { code: "BIH", name: "Bosnia and Herzegovina", flag: "🇧🇦", aliases: ["Bosnia", "Bosnia & Herzegovina"] },
+    { code: "ALB", name: "Albania", flag: "🇦🇱" },
+    { code: "HUN", name: "Hungary", flag: "🇭🇺" },
+    { code: "ROU", name: "Romania", flag: "🇷🇴" },
+    { code: "UKR", name: "Ukraine", flag: "🇺🇦" },
+    { code: "TUR", name: "Türkiye", flag: "🇹🇷", aliases: ["Turkey"] },
+    { code: "GRE", name: "Greece", flag: "🇬🇷" },
+    { code: "ISL", name: "Iceland", flag: "🇮🇸" },
+    { code: "ISR", name: "Israel", flag: "🇮🇱" },
+    { code: "GEO", name: "Georgia", flag: "🇬🇪" },
+    { code: "ARM", name: "Armenia", flag: "🇦🇲" },
+    { code: "AZE", name: "Azerbaijan", flag: "🇦🇿" },
+    { code: "KAZ", name: "Kazakhstan", flag: "🇰🇿" },
+
+    { code: "MAR", name: "Morocco", flag: "🇲🇦" },
+    { code: "EGY", name: "Egypt", flag: "🇪🇬" },
+    { code: "ALG", name: "Algeria", flag: "🇩🇿" },
+    { code: "TUN", name: "Tunisia", flag: "🇹🇳" },
+    { code: "NGA", name: "Nigeria", flag: "🇳🇬" },
+    { code: "GHA", name: "Ghana", flag: "🇬🇭" },
+    { code: "CIV", name: "Côte d'Ivoire", flag: "🇨🇮", aliases: ["Cote d'Ivoire", "Ivory Coast"] },
+    { code: "SEN", name: "Senegal", flag: "🇸🇳" },
+    { code: "CMR", name: "Cameroon", flag: "🇨🇲" },
+    { code: "RSA", name: "South Africa", flag: "🇿🇦", aliases: ["ZAF"] },
+    { code: "COD", name: "DR Congo", flag: "🇨🇩", aliases: ["Congo DR", "Democratic Republic of the Congo"] },
+    { code: "MLI", name: "Mali", flag: "🇲🇱" },
+    { code: "BFA", name: "Burkina Faso", flag: "🇧🇫" },
+    { code: "CPV", name: "Cape Verde", flag: "🇨🇻" },
+    { code: "MOZ", name: "Mozambique", flag: "🇲🇿" },
+    { code: "ANG", name: "Angola", flag: "🇦🇴" },
+    { code: "ZAM", name: "Zambia", flag: "🇿🇲" },
+    { code: "UGA", name: "Uganda", flag: "🇺🇬" },
+    { code: "GUI", name: "Guinea", flag: "🇬🇳" },
+    { code: "GAM", name: "Gambia", flag: "🇬🇲", aliases: ["The Gambia"] },
+    { code: "EQG", name: "Equatorial Guinea", flag: "🇬🇶" },
+
+    { code: "JPN", name: "Japan", flag: "🇯🇵" },
+    { code: "KOR", name: "South Korea", flag: "🇰🇷", aliases: ["Korea Republic", "Republic of Korea"] },
+    { code: "AUS", name: "Australia", flag: "🇦🇺" },
+    { code: "IRN", name: "Iran", flag: "🇮🇷" },
+    { code: "IRQ", name: "Iraq", flag: "🇮🇶" },
+    { code: "KSA", name: "Saudi Arabia", flag: "🇸🇦" },
+    { code: "QAT", name: "Qatar", flag: "🇶🇦" },
+    { code: "UAE", name: "United Arab Emirates", flag: "🇦🇪", aliases: ["UAE"] },
+    { code: "OMA", name: "Oman", flag: "🇴🇲" },
+    { code: "JOR", name: "Jordan", flag: "🇯🇴" },
+    { code: "UZB", name: "Uzbekistan", flag: "🇺🇿" },
+    { code: "CHN", name: "China PR", flag: "🇨🇳", aliases: ["China"] },
+    { code: "IDN", name: "Indonesia", flag: "🇮🇩" },
+    { code: "THA", name: "Thailand", flag: "🇹🇭" },
+    { code: "VIE", name: "Vietnam", flag: "🇻🇳", aliases: ["Viet Nam"] },
+    { code: "NZL", name: "New Zealand", flag: "🇳🇿" }
+  ];
+
+  const COUNTRY_BY_CODE = Object.fromEntries(COUNTRY_RECORDS.map(record => [record.code, record]));
+  const COUNTRY_NAME_TO_CODE = COUNTRY_RECORDS.reduce((map, record) => {
+    [record.name, record.code, ...(record.aliases || [])].forEach(value => {
+      map[normalizeCountryKey(value)] = record.code;
+    });
+    return map;
+  }, {});
+  const COUNTRY_CODE_BY_FLAG = COUNTRY_RECORDS.reduce((map, record) => {
+    if (!map[record.flag]) map[record.flag] = record.code;
+    return map;
+  }, {});
+
+  function displaySeedLabel(teamId) {
+    return BASE_LABELS[teamId] || teamId;
   }
 
   function slotToTeam(slot, picks) {
@@ -382,10 +580,74 @@
     return picks?.m104 ? labelForTeam(picks.m104) : "—";
   }
 
+  function championDetails(picks) {
+    const championId = picks?.m104;
+    if (!championId) {
+      return { flag: "🏳️", code: "TBD", name: "—" };
+    }
+    return {
+      flag: flagForTeam(championId),
+      code: codeForTeam(championId),
+      name: labelForTeam(championId)
+    };
+  }
+
+  function championCardMarkup(picks) {
+    const champ = championDetails(picks);
+    return `
+      <div class="champion-heading">
+        <span class="champion-trophy" aria-hidden="true">🏆</span>
+        <span>Champion</span>
+      </div>
+      <div class="champion-team" title="${escapeHtml(champ.name)}">
+        <span class="champion-flag" aria-hidden="true">${escapeHtml(champ.flag)}</span>
+        <span class="champion-code">${escapeHtml(champ.code)}</span>
+      </div>
+    `;
+  }
+
   function matchupMatchesActual(matchId, userPicks, actualPicks) {
     const userTeams = availableTeams(matchId, userPicks);
     const actualTeams = availableTeams(matchId, actualPicks);
     return userTeams.every((team, idx) => !team.pending && team.id === actualTeams[idx]?.id);
+  }
+
+  function scoreConsistentWithWinner(winnerId, score, teams) {
+    if (!winnerId || !isCompleteScore(score)) return true;
+    const winnerIndex = teams.findIndex(team => team.id === winnerId);
+    if (winnerIndex < 0) return true;
+    if (score.a === score.b) return true; // draw means winner was chosen by penalties
+    return winnerIndex === 0 ? score.a > score.b : score.b > score.a;
+  }
+
+  function firstContradictingScore(picks, scores) {
+    const cleanCurrentPicks = cleanPicks(picks || {});
+    const cleanScores = cleanScoreMap(scores || {});
+    for (const matchId of ALL_MATCH_IDS) {
+      const winnerId = cleanCurrentPicks[matchId];
+      const score = cleanScores[matchId];
+      if (!winnerId || !isCompleteScore(score)) continue;
+      const teams = availableTeams(matchId, cleanCurrentPicks);
+      if (!teams.every(team => !team.pending)) continue;
+      if (!scoreConsistentWithWinner(winnerId, score, teams)) {
+        return {
+          matchId,
+          title: MATCHES[matchId].title,
+          winner: labelForTeam(winnerId),
+          score: scoreText(score)
+        };
+      }
+    }
+    return null;
+  }
+
+  function scoreConflictMessage(matchId, winnerId, score) {
+    return "The score of the winner should be equal or higher than of the loser.";
+  }
+
+  function scoreConflictPopupMessage(scoreConflict) {
+    const suffix = scoreConflict ? `\n\nCheck ${scoreConflict.title}${scoreConflict.score ? ` (${scoreConflict.score})` : ""}.` : "";
+    return `The score of the winner should be equal or higher than of the loser.${suffix}`;
   }
 
   function matchBreakdown(picks, scores, matchId) {
@@ -423,6 +685,11 @@
     }, { win: 0, exact: 0, gd: 0, total: 0 });
   }
 
+  function slotCenterPercent(column, index) {
+    const count = Math.max(1, column?.ids?.length || 1);
+    return ((index + 0.5) / count) * 100;
+  }
+
   function renderBracket(container, picks, scores, options = {}) {
     const isAdmin = options.mode === "admin";
     const isUser = options.mode === "user";
@@ -446,14 +713,16 @@
 
       const stack = document.createElement("div");
       stack.className = "match-stack";
-      column.ids.forEach(matchId => {
-        stack.appendChild(renderMatchCard(matchId, cleanCurrentPicks, cleanCurrentScores, { mode: options.mode, isAdmin, isUser, isViewer, compareResults }));
+      column.ids.forEach((matchId, index) => {
+        const card = renderMatchCard(matchId, cleanCurrentPicks, cleanCurrentScores, { mode: options.mode, isAdmin, isUser, isViewer, compareResults });
+        card.style.setProperty("--slot-center", String(slotCenterPercent(column, index)));
+        stack.appendChild(card);
       });
 
       if (column.key === "final") {
         const champ = document.createElement("div");
         champ.className = "champion-card";
-        champ.innerHTML = `<span class="muted">Champion</span><strong>${escapeHtml(championFrom(cleanCurrentPicks))}</strong>`;
+        champ.innerHTML = championCardMarkup(cleanCurrentPicks);
         stack.appendChild(champ);
       }
 
@@ -468,58 +737,25 @@
     const { isAdmin, isUser, isViewer, compareResults } = options;
     const round = roundOfMatch(matchId);
     const teams = availableTeams(matchId, picks);
-    const bothTeamsKnown = teams.every(team => !team.pending);
     const selectedWinner = picks[matchId];
+    const currentScore = cleanScoreMap(scores)[matchId];
+    const hasConflict = selectedWinner && isCompleteScore(currentScore) && !scoreConsistentWithWinner(selectedWinner, currentScore, teams);
     const card = document.createElement("article");
-    card.className = `match-card ${isViewer ? "view-only" : ""}`.trim();
+    card.className = `match-card fixture-card ${isViewer ? "view-only" : ""} ${hasConflict ? "has-score-conflict" : ""}`.trim();
     card.dataset.matchId = matchId;
 
     const meta = document.createElement("div");
-    meta.className = "match-meta";
-    meta.innerHTML = `<span>${escapeHtml(MATCHES[matchId].title)}<small>${escapeHtml(round.name)}</small></span><span>Win: ${winnerPointsFor(matchId)} pts</span>`;
+    meta.className = "match-meta fixture-meta";
+    meta.innerHTML = `<span>${escapeHtml(MATCHES[matchId].title)}<small>${escapeHtml(round.name)}</small></span><span>World Cup 2026</span>`;
     card.appendChild(meta);
 
-    teams.forEach(team => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "choice";
-      btn.disabled = team.pending || (isUser && predictionsAreLocked());
-      btn.dataset.matchId = matchId;
-      btn.dataset.teamId = team.id;
-
-      const selected = selectedWinner === team.id;
-      if (selected) btn.classList.add("selected");
-
-      if (compareResults && state.config.results?.[matchId]) {
-        if (selected && state.config.results[matchId] === team.id) btn.classList.add("correct");
-        if (selected && state.config.results[matchId] !== team.id) btn.classList.add("incorrect");
-      }
-
-      btn.innerHTML = `<span>${escapeHtml(team.label)}</span>${selected ? '<span class="badge">picked</span>' : ''}`;
-      if (isAdmin || isUser) {
-        btn.addEventListener("click", () => {
-          if (isAdmin) {
-            state.officialDraft[matchId] = team.id;
-            state.officialDraft = cleanPicks(state.officialDraft);
-            state.officialScoreDraft = cleanScoreMap(state.officialScoreDraft);
-            renderAdminTools();
-          } else if (!predictionsAreLocked()) {
-            state.userPicks[matchId] = team.id;
-            state.userPicks = cleanPicks(state.userPicks);
-            state.userScorePredictions = cleanScoreMap(state.userScorePredictions);
-            renderAll();
-          }
-        });
-      }
-      card.appendChild(btn);
-    });
-
-    card.appendChild(renderScoreInputs(matchId, teams, cleanScoreMap(scores)[matchId], {
+    card.appendChild(renderFlagMatchBody(matchId, teams, currentScore, {
       isAdmin,
       isUser,
       isViewer,
       compareResults,
-      disabled: !bothTeamsKnown || isViewer || (isUser && predictionsAreLocked())
+      selectedWinner,
+      disabled: isViewer || (isUser && predictionsAreLocked())
     }));
 
     if (compareResults && state.config.results?.[matchId]) {
@@ -533,24 +769,98 @@
     return card;
   }
 
-  function renderScoreInputs(matchId, teams, score, options) {
-    const row = document.createElement("div");
-    row.className = "score-row";
-    const disabled = options.disabled ? "disabled" : "";
-    const labelA = teams[0]?.pending ? "TBD" : teams[0]?.label;
-    const labelB = teams[1]?.pending ? "TBD" : teams[1]?.label;
+  function renderFlagMatchBody(matchId, teams, score, options) {
+    const body = document.createElement("div");
+    body.className = "match-body";
 
-    row.innerHTML = `
-      <label title="${escapeHtml(labelA)}">${escapeHtml(shortLabel(labelA))}
-        <input ${disabled} inputmode="numeric" type="number" min="0" max="99" step="1" value="${escapeHtml(score?.a ?? "")}" aria-label="${escapeHtml(labelA)} score" />
-      </label>
-      <span class="dash">–</span>
-      <label title="${escapeHtml(labelB)}">${escapeHtml(shortLabel(labelB))}
-        <input ${disabled} inputmode="numeric" type="number" min="0" max="99" step="1" value="${escapeHtml(score?.b ?? "")}" aria-label="${escapeHtml(labelB)} score" />
-      </label>
+    const grid = document.createElement("div");
+    grid.className = "matchup-grid";
+
+    const currentPicks = options.isAdmin ? state.officialDraft : state.userPicks;
+    const currentScores = options.isAdmin ? state.officialScoreDraft : state.userScorePredictions;
+
+    const makeTeamButton = (team, index) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "team-pick";
+      btn.dataset.matchId = matchId;
+      btn.dataset.teamId = team.id;
+      btn.disabled = team.pending || options.disabled;
+
+      const selected = options.selectedWinner === team.id;
+      if (selected) btn.classList.add("selected");
+
+      if (options.compareResults && state.config.results?.[matchId]) {
+        if (selected && state.config.results[matchId] === team.id) btn.classList.add("correct");
+        if (selected && state.config.results[matchId] !== team.id) btn.classList.add("incorrect");
+      }
+
+      const flag = flagForTeam(team.id);
+      const code = codeForTeam(team.id);
+      const label = team.pending ? "TBD" : labelForTeam(team.id);
+      const seed = team.pending ? "TBD" : displaySeedLabel(team.id);
+      btn.title = `${label} · ${seed}`;
+      btn.innerHTML = `
+        <span class="flag-bubble" aria-hidden="true">${escapeHtml(flag)}</span>
+        <span class="team-code">${escapeHtml(code)}</span>
+      `;
+
+      if (options.isAdmin || options.isUser) {
+        btn.addEventListener("click", () => {
+          const latestScore = cleanScoreMap(currentScores || {})[matchId];
+          if (!scoreConsistentWithWinner(team.id, latestScore, teams)) {
+            alert(scoreConflictMessage(matchId, team.id, latestScore));
+            return;
+          }
+
+          if (options.isAdmin) {
+            state.officialDraft[matchId] = team.id;
+            state.officialDraft = cleanPicks(state.officialDraft);
+            state.officialScoreDraft = cleanScoreMap(state.officialScoreDraft);
+            renderAdminTools();
+          } else if (!predictionsAreLocked()) {
+            state.userPicks[matchId] = team.id;
+            state.userPicks = cleanPicks(state.userPicks);
+            state.userScorePredictions = cleanScoreMap(state.userScorePredictions);
+            renderAll();
+          }
+        });
+      }
+      return btn;
+    };
+
+    grid.appendChild(makeTeamButton(teams[0], 0));
+    grid.appendChild(renderScoreInputs(matchId, teams, score, {
+      isAdmin: options.isAdmin,
+      isUser: options.isUser,
+      isViewer: options.isViewer,
+      selectedWinner: options.selectedWinner,
+      compareResults: options.compareResults,
+      disabled: teams.some(team => team.pending) || options.disabled
+    }));
+    grid.appendChild(makeTeamButton(teams[1], 1));
+
+    body.appendChild(grid);
+    return body;
+  }
+
+  function renderScoreInputs(matchId, teams, score, options) {
+    const center = document.createElement("div");
+    center.className = "score-center";
+    const disabled = options.disabled ? "disabled" : "";
+    const conflict = options.selectedWinner && isCompleteScore(score) && !scoreConsistentWithWinner(options.selectedWinner, score, teams);
+    if (conflict) center.classList.add("score-conflict");
+
+    center.innerHTML = `
+      <span class="score-label">Score</span>
+      <div class="score-inputs">
+        <input ${disabled} inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="${escapeHtml(score?.a ?? "")}" aria-label="Left team score" />
+        <span class="dash">–</span>
+        <input ${disabled} inputmode="numeric" type="text" pattern="[0-9]*" maxlength="2" value="${escapeHtml(score?.b ?? "")}" aria-label="Right team score" />
+      </div>
     `;
 
-    const inputs = row.querySelectorAll("input");
+    const inputs = center.querySelectorAll("input");
     if (options.compareResults && isCompleteScore(state.config.resultScores?.[matchId]) && isCompleteScore(score)) {
       const actual = state.config.resultScores[matchId];
       const exact = score.a === actual.a && score.b === actual.b;
@@ -559,19 +869,31 @@
 
     inputs.forEach(input => {
       input.addEventListener("input", () => {
+        // Scores are manual numeric entries only: strip letters, symbols, spaces, etc.
+        inputs.forEach(el => {
+          const cleaned = String(el.value || "").replace(/\D/g, "").slice(0, 2);
+          if (el.value !== cleaned) el.value = cleaned;
+        });
         const nextScore = {
           a: readScoreInput(inputs[0].value),
           b: readScoreInput(inputs[1].value)
         };
+        const targetScores = options.isAdmin ? state.officialScoreDraft : state.userScorePredictions;
+        const targetPicks = options.isAdmin ? state.officialDraft : state.userPicks;
         if (options.isAdmin) {
-          state.officialScoreDraft[matchId] = nextScore;
+          targetScores[matchId] = nextScore;
         } else if (options.isUser && !predictionsAreLocked()) {
-          state.userScorePredictions[matchId] = nextScore;
+          targetScores[matchId] = nextScore;
         }
+
+        const currentWinner = targetPicks?.[matchId];
+        const invalid = currentWinner && isCompleteScore(nextScore) && !scoreConsistentWithWinner(currentWinner, nextScore, teams);
+        center.classList.toggle("score-conflict", Boolean(invalid));
+        inputs.forEach(el => el.setCustomValidity(invalid ? scoreConflictMessage(matchId, currentWinner, nextScore) : ""));
       });
     });
 
-    return row;
+    return center;
   }
 
   function shortLabel(label) {
@@ -585,14 +907,74 @@
     ROUNDS[0].ids.forEach(matchId => {
       const match = MATCHES[matchId];
       const card = document.createElement("article");
-      card.className = "label-card";
+      card.className = "label-card flag-label-card";
       const fields = match.slots.map(slot => {
         const label = labelForTeam(slot.teamId);
-        return `<label>${escapeHtml(slot.teamId)}<input data-label-team="${escapeHtml(slot.teamId)}" value="${escapeHtml(label)}" /></label>`;
+        const code = codeForTeam(slot.teamId);
+        const flag = flagEmojiFromCode(code) || "🏳️";
+        return `
+          <div class="team-edit-row">
+            <label>Team ${escapeHtml(slot.teamId)}
+              <input data-label-team="${escapeHtml(slot.teamId)}" value="${escapeHtml(label)}" placeholder="United States" />
+            </label>
+            <label>3-letter code
+              <div class="code-field-row">
+                <input data-code-team="${escapeHtml(slot.teamId)}" value="${escapeHtml(code)}" maxlength="3" placeholder="USA" />
+                <span class="flag-preview" data-flag-preview="${escapeHtml(slot.teamId)}" title="Auto flag from code">${escapeHtml(flag)}</span>
+              </div>
+            </label>
+          </div>
+        `;
       }).join("");
-      card.innerHTML = `<h4>${escapeHtml(match.title)}</h4><div class="slot-grid">${fields}</div>`;
+      card.innerHTML = `<h4>${escapeHtml(match.title)}</h4><div class="slot-grid flag-slot-grid">${fields}</div>`;
       els.labelEditor.appendChild(card);
     });
+
+    document.querySelectorAll("[data-label-team]").forEach(input => {
+      input.addEventListener("input", () => syncCountryEditorFromName(input.dataset.labelTeam, { canonicalize: false }));
+      input.addEventListener("change", () => syncCountryEditorFromName(input.dataset.labelTeam, { canonicalize: true }));
+      input.addEventListener("blur", () => syncCountryEditorFromName(input.dataset.labelTeam, { canonicalize: true }));
+    });
+
+    document.querySelectorAll("[data-code-team]").forEach(input => {
+      input.addEventListener("input", () => syncCountryEditorFromCode(input.dataset.codeTeam));
+      input.addEventListener("change", () => syncCountryEditorFromCode(input.dataset.codeTeam));
+      input.addEventListener("blur", () => syncCountryEditorFromCode(input.dataset.codeTeam));
+    });
+  }
+
+  function syncCountryEditorFromName(teamId, options = {}) {
+    const nameInput = document.querySelector(`[data-label-team="${teamId}"]`);
+    const codeInput = document.querySelector(`[data-code-team="${teamId}"]`);
+    if (!nameInput || !codeInput) return;
+
+    const detectedCode = countryCodeFromLabel(nameInput.value);
+    if (detectedCode) {
+      codeInput.value = detectedCode;
+      if (options.canonicalize) {
+        const canonicalName = countryNameFromCode(detectedCode);
+        if (canonicalName) nameInput.value = canonicalName;
+      }
+    }
+    updateFlagPreview(teamId);
+  }
+
+  function syncCountryEditorFromCode(teamId) {
+    const nameInput = document.querySelector(`[data-label-team="${teamId}"]`);
+    const codeInput = document.querySelector(`[data-code-team="${teamId}"]`);
+    if (!nameInput || !codeInput) return;
+
+    codeInput.value = normalizeCountryCode(codeInput.value);
+    const record = countryRecordFromCode(codeInput.value);
+    if (record) nameInput.value = record.name;
+    updateFlagPreview(teamId);
+  }
+
+  function updateFlagPreview(teamId) {
+    const codeInput = document.querySelector(`[data-code-team="${teamId}"]`);
+    const preview = document.querySelector(`[data-flag-preview="${teamId}"]`);
+    if (!preview || !codeInput) return;
+    preview.textContent = flagEmojiFromCode(codeInput.value) || "🇺🇸";
   }
 
   function renderAdminTools() {
@@ -726,6 +1108,7 @@
           <li>Correct exact score prediction: <strong>${Number(SCORING.exactScorePoints || 0)} point${Number(SCORING.exactScorePoints || 0) === 1 ? "" : "s"}</strong>, constant for every round.</li>
           <li>Correct goal-difference prediction: <strong>${Number(SCORING.goalDifferencePoints || 0)} point${Number(SCORING.goalDifferencePoints || 0) === 1 ? "" : "s"}</strong>, constant for every round.</li>
           <li>For score and goal-difference bonuses in later rounds, your predicted matchup must match the actual matchup for that match slot.</li>
+          <li>A tied score is allowed in knockout games. It means the team you selected as winner advances on penalties.</li>
         </ul>
       </div>
       <div class="rules-box">
@@ -811,7 +1194,35 @@
     filter.setAttribute("id", "connectorGlow");
     filter.innerHTML = `<feGaussianBlur stdDeviation="2.1" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>`;
     defs.appendChild(filter);
+
+    const arrow = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    arrow.setAttribute("id", "connectorArrow");
+    arrow.setAttribute("markerWidth", "9");
+    arrow.setAttribute("markerHeight", "9");
+    arrow.setAttribute("refX", "7.6");
+    arrow.setAttribute("refY", "4.5");
+    arrow.setAttribute("orient", "auto");
+    arrow.setAttribute("markerUnits", "strokeWidth");
+    arrow.innerHTML = `<path d="M 0 0 L 9 4.5 L 0 9 z" class="connector-arrow-head"></path>`;
+    defs.appendChild(arrow);
+
     svg.appendChild(defs);
+
+    const addVisibleArrowHead = (x, y, direction, extraClass = "") => {
+      const size = Math.max(9, Math.min(15, width * 0.006));
+      let points;
+      if (direction === "right") {
+        points = `${x.toFixed(1)},${y.toFixed(1)} ${(x - size).toFixed(1)},${(y - size * 0.56).toFixed(1)} ${(x - size).toFixed(1)},${(y + size * 0.56).toFixed(1)}`;
+      } else if (direction === "left") {
+        points = `${x.toFixed(1)},${y.toFixed(1)} ${(x + size).toFixed(1)},${(y - size * 0.56).toFixed(1)} ${(x + size).toFixed(1)},${(y + size * 0.56).toFixed(1)}`;
+      } else {
+        points = `${x.toFixed(1)},${y.toFixed(1)} ${(x - size * 0.56).toFixed(1)},${(y - size).toFixed(1)} ${(x + size * 0.56).toFixed(1)},${(y - size).toFixed(1)}`;
+      }
+      const head = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      head.setAttribute("points", points);
+      head.setAttribute("class", `visible-arrow-head ${extraClass}`.trim());
+      svg.appendChild(head);
+    };
 
     const cardFor = id => container.querySelector(`.match-card[data-match-id="${id}"]`);
     ALL_MATCH_IDS.forEach(parentId => {
@@ -824,17 +1235,40 @@
         const p = parent.getBoundingClientRect();
         const c = child.getBoundingClientRect();
         const childIsLeft = (c.left + c.width / 2) < (p.left + p.width / 2);
+        const isFinalEntry = parentId === "m104";
+        const arrowGap = isFinalEntry ? Math.max(10, Math.min(18, p.width * 0.06)) : 0;
         const x1 = childIsLeft ? c.right - boardRect.left : c.left - boardRect.left;
         const y1 = c.top - boardRect.top + c.height / 2;
-        const x2 = childIsLeft ? p.left - boardRect.left : p.right - boardRect.left;
+        const x2 = childIsLeft
+          ? p.left - boardRect.left - arrowGap
+          : p.right - boardRect.left + arrowGap;
         const y2 = p.top - boardRect.top + p.height / 2;
         const mid = x1 + (x2 - x1) * 0.5;
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${mid.toFixed(1)} ${y1.toFixed(1)}, ${mid.toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`);
-        path.setAttribute("class", "connector-path");
+        path.setAttribute("class", isFinalEntry ? "connector-path final-stage-connector final-entry-arrow" : "connector-path");
         svg.appendChild(path);
+        if (isFinalEntry) addVisibleArrowHead(x2, y2, childIsLeft ? "right" : "left", "final-visible-arrow");
       });
     });
+
+    const finalCard = cardFor("m104");
+    const championCard = container.querySelector(".final-column .champion-card");
+    if (finalCard && championCard) {
+      const f = finalCard.getBoundingClientRect();
+      const ch = championCard.getBoundingClientRect();
+      const x = f.left - boardRect.left + f.width / 2;
+      const y1 = f.bottom - boardRect.top + 4;
+      const y2 = ch.top - boardRect.top - Math.max(8, Math.min(14, f.height * 0.08));
+      if (y2 > y1) {
+        const yMid = y1 + (y2 - y1) * 0.52;
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", `M ${x.toFixed(1)} ${y1.toFixed(1)} C ${x.toFixed(1)} ${yMid.toFixed(1)}, ${x.toFixed(1)} ${yMid.toFixed(1)}, ${x.toFixed(1)} ${y2.toFixed(1)}`);
+        path.setAttribute("class", "connector-path final-stage-connector champion-connector");
+        svg.appendChild(path);
+        addVisibleArrowHead(x, y2, "down", "champion-visible-arrow");
+      }
+    }
 
     container.prepend(svg);
   }
@@ -880,7 +1314,7 @@
 
       const initial = await state.gameRef.get();
       if (!initial.exists) {
-        await state.gameRef.set({ locked: false, lockAt: "", labelOverrides: {}, results: {}, resultScores: {}, extraRulesText: "", updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        await state.gameRef.set({ locked: false, lockAt: "", labelOverrides: {}, codeOverrides: {}, flagOverrides: {}, results: {}, resultScores: {}, extraRulesText: "", updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       }
 
       state.gameRef.onSnapshot(snapshot => {
@@ -996,6 +1430,12 @@
       return setMessage(`This private game is set to ${SETTINGS.maxParticipants} participants. Ask the admin to raise the limit.`, "error");
     }
 
+    const scoreConflict = firstContradictingScore(state.userPicks, state.userScorePredictions);
+    if (scoreConflict) {
+      alert(scoreConflictPopupMessage(scoreConflict));
+      return;
+    }
+
     const data = {
       playerId: state.playerId,
       usernameKey: state.playerId,
@@ -1080,7 +1520,19 @@
     document.querySelectorAll("[data-label-team]").forEach(input => {
       const teamId = input.dataset.labelTeam;
       const value = input.value.trim();
-      if (value && value !== BASE_LABELS[teamId]) overrides[teamId] = value;
+      if (value && value !== "USA") overrides[teamId] = value;
+    });
+    return overrides;
+  }
+
+  function collectCodeOverrides() {
+    const overrides = {};
+    document.querySelectorAll("[data-code-team]").forEach(input => {
+      const teamId = input.dataset.codeTeam;
+      const value = normalizeCountryCode(input.value);
+      const labelInput = document.querySelector(`[data-label-team="${teamId}"]`);
+      const detected = countryCodeFromLabel(labelInput?.value || "");
+      if (value && value !== detected) overrides[teamId] = value;
     });
     return overrides;
   }
@@ -1151,7 +1603,7 @@
 
   function attachEvents() {
     const versionBadge = document.getElementById("appVersionBadge");
-    if (versionBadge) versionBadge.textContent = "v2.8 · deadline lock";
+    if (versionBadge) versionBadge.textContent = "v2.22 · visible final arrows";
     ensureDeleteBracketButton();
     els.nameInput.value = state.playerName;
     els.joinBtn.addEventListener("click", joinBracket);
@@ -1200,9 +1652,20 @@
       }
     });
     els.toggleLockBtn.addEventListener("click", () => saveConfig({ locked: !state.config.locked }));
-    els.saveLabelsBtn.addEventListener("click", () => saveConfig({ labelOverrides: collectLabelOverrides() }));
+    els.saveLabelsBtn.addEventListener("click", () => saveConfig({
+      labelOverrides: collectLabelOverrides(),
+      codeOverrides: collectCodeOverrides(),
+      flagOverrides: {}
+    }));
     els.saveRulesBtn.addEventListener("click", () => saveConfig({ extraRulesText: els.extraRulesInput.value.trim() }));
-    els.saveResultsBtn.addEventListener("click", () => saveConfig({ results: cleanPicks(state.officialDraft), resultScores: cleanScoreMap(state.officialScoreDraft) }));
+    els.saveResultsBtn.addEventListener("click", () => {
+      const scoreConflict = firstContradictingScore(state.officialDraft, state.officialScoreDraft);
+      if (scoreConflict) {
+        alert(scoreConflictPopupMessage(scoreConflict));
+        return;
+      }
+      saveConfig({ results: cleanPicks(state.officialDraft), resultScores: cleanScoreMap(state.officialScoreDraft) });
+    });
   }
 
   attachEvents();

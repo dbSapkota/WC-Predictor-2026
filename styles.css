@@ -1299,3 +1299,1328 @@ main {
     flex: 1 1 140px;
   }
 }
+
+/* v2.10 fixture-style flag cards + score guard */
+.match-card.fixture-card {
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgba(216, 226, 239, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.fixture-card .fixture-meta,
+.fixture-card .match-meta {
+  margin: 0 !important;
+  padding: clamp(5px, 0.48vw, 9px) clamp(6px, 0.62vw, 12px) !important;
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(8, 26, 55, 0.98), rgba(10, 39, 92, 0.92));
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.fixture-card .match-meta small {
+  color: rgba(226, 232, 240, 0.9) !important;
+}
+
+.fixture-card .match-body {
+  padding: clamp(6px, 0.58vw, 12px);
+}
+
+.matchup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: clamp(4px, 0.55vw, 10px);
+}
+
+.team-pick {
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  gap: clamp(2px, 0.3vw, 6px);
+  padding: clamp(3px, 0.36vw, 8px) clamp(2px, 0.3vw, 6px);
+  border: 2px solid transparent;
+  border-radius: clamp(10px, 0.85vw, 16px);
+  background: transparent;
+  color: var(--ink);
+  text-align: center;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.team-pick:not([disabled]):hover {
+  background: rgba(246, 196, 83, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(246, 196, 83, 0.25);
+}
+
+.team-pick[disabled] {
+  cursor: not-allowed;
+  color: #9aa4b5;
+  opacity: 0.78;
+}
+
+.team-pick .flag-bubble {
+  display: grid;
+  place-items: center;
+  width: clamp(28px, 2.55vw, 54px);
+  height: clamp(24px, 2.12vw, 44px);
+  border-radius: clamp(9px, 0.8vw, 16px);
+  border: 2px solid rgba(226, 232, 240, 0.95);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  font-size: clamp(17px, 1.6vw, 32px);
+  line-height: 1;
+}
+
+.team-pick .team-code {
+  max-width: 100%;
+  color: #0f172a;
+  font-size: clamp(9px, 0.72vw, 15px);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-pick small {
+  max-width: 100%;
+  color: #66738a;
+  font-size: clamp(6px, 0.46vw, 9px);
+  font-weight: 850;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-pick.selected .flag-bubble {
+  border-color: #f7c948;
+  box-shadow:
+    0 0 0 clamp(2px, 0.22vw, 4px) rgba(247, 201, 72, 0.22),
+    0 8px 18px rgba(183, 121, 31, 0.22);
+}
+
+.team-pick.selected .team-code {
+  color: #7a5200;
+}
+
+.team-pick.correct .flag-bubble {
+  border-color: var(--good);
+  box-shadow: 0 0 0 clamp(2px, 0.22vw, 4px) rgba(21, 128, 61, 0.18);
+}
+
+.team-pick.incorrect .flag-bubble {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 clamp(2px, 0.22vw, 4px) rgba(185, 28, 28, 0.12);
+}
+
+.score-center {
+  display: grid;
+  justify-items: center;
+  gap: clamp(2px, 0.28vw, 5px);
+  min-width: clamp(54px, 4.7vw, 96px);
+  align-self: center;
+}
+
+.score-label,
+.score-note {
+  color: #66738a;
+  font-size: clamp(6px, 0.48vw, 10px);
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+}
+
+.score-note {
+  color: #7c8799;
+  font-weight: 850;
+}
+
+.score-inputs {
+  display: grid;
+  grid-template-columns: minmax(20px, 1fr) auto minmax(20px, 1fr);
+  align-items: center;
+  gap: clamp(3px, 0.34vw, 6px);
+  width: 100%;
+}
+
+.score-inputs input {
+  width: 100%;
+  min-width: 0;
+  height: clamp(24px, 1.85vw, 38px) !important;
+  margin: 0 !important;
+  padding: 1px 2px !important;
+  border: 1.5px solid #cbd5e1;
+  border-radius: clamp(7px, 0.65vw, 12px);
+  background: #ffffff;
+  color: #0f172a;
+  font-size: clamp(10px, 0.82vw, 16px) !important;
+  font-weight: 1000;
+  text-align: center;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.score-inputs .dash {
+  padding: 0 !important;
+  color: #23324a;
+  font-size: clamp(12px, 0.95vw, 20px) !important;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.score-center.score-conflict input,
+.has-score-conflict .score-inputs input {
+  border-color: #dc2626 !important;
+  background: #fff1f2;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+}
+
+.score-warning {
+  margin: 0 clamp(6px, 0.58vw, 12px) clamp(7px, 0.58vw, 12px);
+  padding: clamp(5px, 0.48vw, 8px) clamp(6px, 0.58vw, 10px);
+  border-radius: 10px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: #fff1f2;
+  color: #991b1b;
+  font-size: clamp(7px, 0.56vw, 11px);
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.fixture-card .match-points {
+  margin: 0 clamp(6px, 0.58vw, 12px) clamp(7px, 0.58vw, 12px) !important;
+}
+
+/* Hide older stacked team-choice styling if any old nodes appear in cached markup. */
+.fixture-card .choice {
+  display: none !important;
+}
+
+@media (max-width: 1400px) {
+  .matchup-grid {
+    gap: 3px;
+  }
+  .team-pick small,
+  .score-note {
+    display: none;
+  }
+  .score-center {
+    min-width: 48px;
+  }
+}
+
+@media (max-width: 900px) {
+  .team-pick .flag-bubble {
+    width: 30px;
+    height: 25px;
+    font-size: 18px;
+  }
+  .team-pick .team-code {
+    font-size: 10px;
+  }
+  .score-center {
+    min-width: 56px;
+  }
+}
+
+/* v2.11 even responsive fixture cards
+   Equal column widths + uniform match cards + fully-contained flag/score blocks. */
+.knockout-board,
+.viewer-board,
+.admin-bracket {
+  --fixture-card-h: clamp(118px, 6.75vw, 150px);
+  --fixture-head-h: clamp(30px, 2.15vw, 40px);
+  --fixture-pad: clamp(6px, 0.55vw, 11px);
+  --fixture-gap: clamp(5px, 0.55vw, 10px);
+  --flag-w: clamp(34px, 2.65vw, 56px);
+  --score-input-h: clamp(28px, 2vw, 38px);
+  width: 100% !important;
+  min-width: 1180px !important;
+  grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+  gap: clamp(6px, 0.72vw, 14px) !important;
+  padding: clamp(8px, 0.85vw, 16px) !important;
+  overflow: hidden !important;
+}
+
+.admin-bracket {
+  grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+  min-width: 1180px !important;
+}
+
+.bracket-column {
+  min-width: 0 !important;
+  min-height: clamp(980px, 64vw, 1230px) !important;
+}
+
+.match-stack {
+  min-width: 0 !important;
+  gap: clamp(6px, 0.62vw, 12px) !important;
+}
+
+.bracket-column[data-round="Round of 16"] .match-stack { padding-block: clamp(48px, 5.2vw, 96px) !important; }
+.bracket-column[data-round="Quarterfinals"] .match-stack { padding-block: clamp(145px, 12.5vw, 235px) !important; }
+.bracket-column[data-round="Semifinals"] .match-stack { padding-block: clamp(315px, 24vw, 460px) !important; }
+.bracket-column.final-column .match-stack { padding-block: clamp(420px, 32vw, 610px) !important; }
+
+.match-card.fixture-card {
+  width: 100% !important;
+  height: var(--fixture-card-h) !important;
+  min-height: var(--fixture-card-h) !important;
+  max-height: var(--fixture-card-h) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  border-radius: clamp(13px, 0.95vw, 18px) !important;
+}
+
+.fixture-card .fixture-meta,
+.fixture-card .match-meta {
+  flex: 0 0 var(--fixture-head-h) !important;
+  min-height: var(--fixture-head-h) !important;
+  max-height: var(--fixture-head-h) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 clamp(7px, 0.65vw, 12px) !important;
+  overflow: hidden !important;
+}
+
+.fixture-card .match-meta > span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.fixture-card .match-meta > span:first-child {
+  flex: 1 1 auto !important;
+}
+
+.fixture-card .match-meta > span:last-child {
+  flex: 0 0 auto !important;
+}
+
+.fixture-card .match-meta small {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.fixture-card .match-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  align-items: center !important;
+  padding: var(--fixture-pad) !important;
+}
+
+.matchup-grid {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 31%) minmax(0, 38%) minmax(0, 31%) !important;
+  align-items: center !important;
+  gap: var(--fixture-gap) !important;
+}
+
+.team-pick {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1.25fr) auto auto !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: clamp(1px, 0.18vw, 4px) !important;
+  padding: clamp(2px, 0.3vw, 6px) !important;
+  overflow: hidden !important;
+}
+
+.team-pick .flag-bubble {
+  width: min(88%, var(--flag-w)) !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  border-radius: clamp(9px, 0.75vw, 15px) !important;
+  font-size: clamp(18px, 1.55vw, 31px) !important;
+  line-height: 1 !important;
+}
+
+.team-pick .team-code,
+.team-pick small {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+.team-pick .team-code {
+  font-size: clamp(10px, 0.76vw, 15px) !important;
+  line-height: 1 !important;
+}
+
+.team-pick small {
+  font-size: clamp(6px, 0.46vw, 9px) !important;
+  line-height: 1.05 !important;
+}
+
+.score-center {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: clamp(1px, 0.2vw, 4px) !important;
+  align-self: stretch !important;
+}
+
+.score-inputs {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(4px, 0.36vw, 7px) !important;
+}
+
+.score-inputs input {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: var(--score-input-h) !important;
+  padding: 0 2px !important;
+  font-size: clamp(11px, 0.9vw, 17px) !important;
+  border-radius: clamp(8px, 0.72vw, 13px) !important;
+}
+
+.score-inputs .dash {
+  font-size: clamp(14px, 1.05vw, 22px) !important;
+  line-height: 1 !important;
+}
+
+.score-label,
+.score-note {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Keep exceptional content from changing card dimensions. */
+.fixture-card .match-points,
+.score-warning {
+  position: absolute !important;
+  left: var(--fixture-pad) !important;
+  right: var(--fixture-pad) !important;
+  bottom: var(--fixture-pad) !important;
+  margin: 0 !important;
+  z-index: 3 !important;
+  max-height: 34% !important;
+  overflow: hidden !important;
+}
+
+.fixture-card.has-score-conflict .match-body,
+.fixture-card:has(.match-points) .match-body {
+  padding-bottom: clamp(24px, 2.2vw, 38px) !important;
+}
+
+.champion-card {
+  width: 100% !important;
+  min-height: var(--fixture-card-h) !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+@media (max-width: 1400px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    --fixture-card-h: 112px;
+    --fixture-head-h: 30px;
+    --flag-w: 36px;
+    --score-input-h: 28px;
+    min-width: 1080px !important;
+  }
+
+  .team-pick small,
+  .score-note {
+    display: none !important;
+  }
+
+  .matchup-grid {
+    grid-template-columns: minmax(0, 30%) minmax(0, 40%) minmax(0, 30%) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    --fixture-card-h: 110px;
+    min-width: 1040px !important;
+  }
+}
+
+/* v2.12: cleaner fixture cards, readable friend bracket, flag editor, no spinner inputs. */
+.knockout-board,
+.viewer-board,
+.admin-bracket {
+  --fixture-card-h: clamp(128px, 7vw, 158px);
+  --fixture-head-h: clamp(34px, 2.25vw, 42px);
+  --fixture-pad: clamp(7px, 0.58vw, 12px);
+  --fixture-gap: clamp(6px, 0.45vw, 10px);
+  --round-gap: clamp(12px, 1vw, 22px);
+  --flag-w: clamp(42px, 3vw, 62px);
+  --score-input-h: clamp(30px, 2.05vw, 40px);
+  min-width: max(1500px, 100%) !important;
+  grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+  gap: clamp(10px, 0.82vw, 18px) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+
+.viewer-board {
+  min-width: max(1550px, 100%) !important;
+}
+
+.bracket-column {
+  min-height: calc((var(--fixture-card-h) * 8) + (var(--round-gap) * 8) + 42px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.match-stack {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-around !important;
+  gap: 0 !important;
+  padding-block: 0 !important;
+  position: relative !important;
+}
+
+.bracket-column[data-round="Round of 16"] .match-stack,
+.bracket-column[data-round="Quarterfinals"] .match-stack,
+.bracket-column[data-round="Semifinals"] .match-stack,
+.bracket-column.final-column .match-stack {
+  padding-block: 0 !important;
+}
+
+.final-column .match-stack {
+  justify-content: center !important;
+}
+
+.final-column .champion-card {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: calc(50% + (var(--fixture-card-h) / 2) + 14px) !important;
+  width: 100% !important;
+  min-height: clamp(88px, 5.2vw, 122px) !important;
+  z-index: 4 !important;
+}
+
+.match-card::after,
+.final-column .match-card::after,
+.champion-card::after {
+  display: none !important;
+}
+
+.match-card.fixture-card {
+  min-height: var(--fixture-card-h) !important;
+  height: var(--fixture-card-h) !important;
+  max-height: var(--fixture-card-h) !important;
+  overflow: hidden !important;
+}
+
+.fixture-card .match-body {
+  padding: var(--fixture-pad) !important;
+  overflow: hidden !important;
+}
+
+.matchup-grid {
+  grid-template-columns: minmax(0, 34%) minmax(0, 32%) minmax(0, 34%) !important;
+  gap: var(--fixture-gap) !important;
+  align-items: center !important;
+}
+
+.team-pick {
+  grid-template-rows: minmax(0, 1.35fr) auto auto !important;
+  padding: clamp(3px, 0.32vw, 7px) !important;
+  gap: clamp(2px, 0.18vw, 4px) !important;
+  overflow: hidden !important;
+}
+
+.team-pick .flag-bubble {
+  width: min(92%, var(--flag-w)) !important;
+  max-width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  font-size: clamp(22px, 1.8vw, 35px) !important;
+  border-radius: clamp(10px, 0.75vw, 16px) !important;
+}
+
+.team-pick .team-code {
+  font-size: clamp(12px, 0.9vw, 18px) !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1 !important;
+  max-width: 100% !important;
+}
+
+.team-pick small {
+  font-size: clamp(7px, 0.48vw, 10px) !important;
+  max-width: 100% !important;
+}
+
+.score-center {
+  grid-template-rows: auto 1fr !important;
+  gap: clamp(2px, 0.22vw, 4px) !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+}
+
+.score-label {
+  font-size: clamp(7px, 0.5vw, 10px) !important;
+  letter-spacing: 0.02em !important;
+}
+
+.score-note {
+  display: none !important;
+}
+
+.score-inputs {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  gap: clamp(3px, 0.28vw, 6px) !important;
+}
+
+.score-inputs input {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+  height: var(--score-input-h) !important;
+  min-height: 0 !important;
+  padding: 0 3px !important;
+  font-size: clamp(13px, 0.95vw, 18px) !important;
+  font-weight: 1000 !important;
+}
+
+.score-inputs input::-webkit-outer-spin-button,
+.score-inputs input::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+.score-inputs .dash {
+  font-size: clamp(14px, 1vw, 21px) !important;
+}
+
+/* Make the friend-view modal readable instead of shrinking the cards too far. */
+.prediction-dialog {
+  width: min(98vw, 1920px) !important;
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+.viewer-card {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.viewer-scroll {
+  overflow: auto !important;
+  max-height: min(76vh, 900px) !important;
+  padding: clamp(8px, 0.8vw, 16px) !important;
+}
+
+.viewer-board .team-pick .team-code,
+.viewer-board .team-pick small {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Admin team label + 3-letter country-code editor. */
+.flag-label-card .flag-slot-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+.team-edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(118px, 0.34fr);
+  gap: 10px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid rgba(219, 226, 239, 0.9);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.code-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: center;
+}
+
+.team-edit-row input[data-code-team] {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  padding-inline: 6px;
+}
+
+.flag-preview {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  font-size: 24px;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+}
+
+@media (max-width: 1400px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    --fixture-card-h: 126px;
+    --fixture-head-h: 34px;
+    --flag-w: 42px;
+    --score-input-h: 30px;
+    min-width: 1450px !important;
+  }
+
+  .bracket-column {
+    min-height: calc((var(--fixture-card-h) * 8) + (var(--round-gap) * 8) + 42px) !important;
+  }
+
+  .team-pick small {
+    display: block !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    min-width: 1320px !important;
+  }
+
+  .team-edit-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* v2.15: cleaner team cards and two-digit numeric score boxes. */
+.matchup-grid {
+  grid-template-columns: minmax(0, 31%) minmax(72px, 38%) minmax(0, 31%) !important;
+}
+
+.team-pick {
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  min-width: 0 !important;
+}
+
+.team-pick small {
+  display: none !important;
+}
+
+.team-pick .flag-bubble {
+  width: clamp(42px, 72%, 70px) !important;
+  max-width: 100% !important;
+}
+
+.team-pick .team-code {
+  width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.score-center {
+  min-width: 72px !important;
+}
+
+.score-inputs {
+  grid-template-columns: minmax(30px, 1fr) auto minmax(30px, 1fr) !important;
+  gap: clamp(5px, 0.4vw, 9px) !important;
+}
+
+.score-inputs input {
+  width: 100% !important;
+  min-width: 30px !important;
+  max-width: 54px !important;
+  justify-self: center !important;
+  padding-inline: 4px !important;
+  font-size: clamp(15px, 1.05vw, 20px) !important;
+  line-height: 1 !important;
+}
+
+.viewer-board .score-inputs input,
+.prediction-dialog .score-inputs input {
+  min-width: 32px !important;
+}
+
+
+/* v2.16: larger score boxes + no flag container box.
+   The flag itself gets the selected glow instead of a visible button/bubble box. */
+.knockout-board,
+.viewer-board,
+.admin-bracket {
+  --score-input-h: clamp(38px, 2.55vw, 52px) !important;
+  --flag-w: clamp(48px, 3.35vw, 76px) !important;
+}
+
+.matchup-grid {
+  grid-template-columns: minmax(0, 28%) minmax(96px, 44%) minmax(0, 28%) !important;
+  gap: clamp(6px, 0.5vw, 12px) !important;
+}
+
+.score-center {
+  min-width: 96px !important;
+  overflow: visible !important;
+}
+
+.score-inputs {
+  grid-template-columns: minmax(42px, 1fr) auto minmax(42px, 1fr) !important;
+  gap: clamp(7px, 0.55vw, 12px) !important;
+  width: min(100%, 148px) !important;
+  margin-inline: auto !important;
+}
+
+.score-inputs input {
+  width: 100% !important;
+  min-width: 42px !important;
+  max-width: 64px !important;
+  height: var(--score-input-h) !important;
+  padding: 0 6px !important;
+  font-size: clamp(18px, 1.45vw, 28px) !important;
+  line-height: 1 !important;
+  border-radius: clamp(12px, 0.85vw, 18px) !important;
+}
+
+.score-inputs .dash {
+  font-size: clamp(22px, 1.55vw, 30px) !important;
+  font-weight: 1000 !important;
+}
+
+.team-pick {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: clamp(2px, 0.24vw, 5px) !important;
+  gap: clamp(3px, 0.25vw, 5px) !important;
+}
+
+.team-pick:hover,
+.team-pick:not([disabled]):hover {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.team-pick .flag-bubble {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: clamp(30px, 2.35vw, 48px) !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.16));
+}
+
+.team-pick.selected .flag-bubble {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter:
+    drop-shadow(0 0 0.75px #f59e0b)
+    drop-shadow(0 0 2px #facc15)
+    drop-shadow(0 0 7px rgba(250, 204, 21, 0.9)) !important;
+}
+
+.team-pick.correct .flag-bubble {
+  filter:
+    drop-shadow(0 0 1px #16a34a)
+    drop-shadow(0 0 7px rgba(22, 163, 74, 0.75)) !important;
+}
+
+.team-pick.incorrect .flag-bubble {
+  filter:
+    drop-shadow(0 0 1px #dc2626)
+    drop-shadow(0 0 7px rgba(220, 38, 38, 0.75)) !important;
+}
+
+.team-pick.selected .team-code {
+  color: #7c4a03 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.fixture-card .match-body {
+  overflow: visible !important;
+}
+
+.match-card.fixture-card {
+  overflow: visible !important;
+}
+
+@media (max-width: 1400px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    --score-input-h: 40px !important;
+    --flag-w: 48px !important;
+  }
+
+  .matchup-grid {
+    grid-template-columns: minmax(0, 27%) minmax(102px, 46%) minmax(0, 27%) !important;
+  }
+
+  .score-inputs input {
+    min-width: 42px !important;
+    max-width: 58px !important;
+    font-size: 20px !important;
+  }
+
+  .team-pick .flag-bubble {
+    font-size: 34px !important;
+  }
+}
+
+/* v2.18: keep flag/score contents contained, use popup for save conflicts, and show champion flag/name. */
+.knockout-board,
+.viewer-board,
+.admin-bracket {
+  --fixture-card-h: clamp(126px, 6.75vw, 154px) !important;
+  --fixture-head-h: clamp(36px, 2.05vw, 42px) !important;
+  --fixture-pad: clamp(8px, 0.6vw, 12px) !important;
+  --fixture-gap: clamp(4px, 0.36vw, 8px) !important;
+  --flag-w: clamp(42px, 2.65vw, 58px) !important;
+  --score-input-h: clamp(42px, 2.25vw, 50px) !important;
+}
+
+.match-stack {
+  justify-content: space-evenly !important;
+}
+
+.match-card.fixture-card,
+.fixture-card .match-body {
+  overflow: hidden !important;
+}
+
+.fixture-card .match-body {
+  height: calc(var(--fixture-card-h) - var(--fixture-head-h)) !important;
+  padding: var(--fixture-pad) !important;
+}
+
+.matchup-grid {
+  width: 100% !important;
+  height: 100% !important;
+  grid-template-columns: minmax(0, 30%) minmax(96px, 40%) minmax(0, 30%) !important;
+  gap: var(--fixture-gap) !important;
+  overflow: hidden !important;
+  align-items: center !important;
+}
+
+.team-pick {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: 0 !important;
+  gap: clamp(1px, 0.14vw, 4px) !important;
+}
+
+.team-pick .flag-bubble {
+  width: min(100%, var(--flag-w)) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: clamp(28px, 1.95vw, 40px) !important;
+  line-height: 1 !important;
+  transform: scaleX(0.92) !important;
+  filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.16));
+}
+
+.team-pick.selected .flag-bubble {
+  filter:
+    drop-shadow(0 0 1px #b45309)
+    drop-shadow(0 0 3px #facc15)
+    drop-shadow(0 0 8px rgba(250, 204, 21, 0.85)) !important;
+}
+
+.team-pick .team-code {
+  max-width: 100% !important;
+  width: 100% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: clamp(16px, 1.05vw, 22px) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.score-center {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: clamp(2px, 0.2vw, 4px) !important;
+}
+
+.score-label {
+  font-size: clamp(8px, 0.56vw, 11px) !important;
+  line-height: 1 !important;
+}
+
+.score-inputs {
+  width: min(100%, 136px) !important;
+  max-width: 100% !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  gap: clamp(4px, 0.35vw, 7px) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  overflow: hidden !important;
+}
+
+.score-inputs input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 48px !important;
+  height: var(--score-input-h) !important;
+  padding: 0 5px !important;
+  font-size: clamp(18px, 1.25vw, 24px) !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.score-inputs .dash {
+  font-size: clamp(22px, 1.35vw, 28px) !important;
+  line-height: 1 !important;
+}
+
+.score-warning {
+  display: none !important;
+}
+
+.champion-card {
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  padding: clamp(10px, 0.8vw, 16px) !important;
+  overflow: hidden !important;
+}
+
+.champion-team {
+  display: grid !important;
+  place-items: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.champion-flag {
+  display: block !important;
+  font-size: clamp(30px, 2vw, 44px) !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.18));
+}
+
+.champion-code {
+  font-size: clamp(16px, 1.05vw, 22px) !important;
+  font-weight: 1000 !important;
+  line-height: 1 !important;
+  color: #0f172a !important;
+}
+
+.champion-team strong {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: clamp(13px, 0.82vw, 17px) !important;
+  line-height: 1.15 !important;
+}
+
+@media (max-width: 1400px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    --fixture-card-h: 126px !important;
+    --fixture-head-h: 36px !important;
+    --flag-w: 42px !important;
+    --score-input-h: 42px !important;
+  }
+
+  .matchup-grid {
+    grid-template-columns: minmax(0, 29%) minmax(98px, 42%) minmax(0, 29%) !important;
+  }
+
+  .team-pick .flag-bubble {
+    font-size: 30px !important;
+  }
+
+  .team-pick .team-code {
+    font-size: 16px !important;
+  }
+
+  .score-inputs input {
+    max-width: 44px !important;
+    font-size: 20px !important;
+  }
+}
+
+
+/* v2.19: deterministic bracket-slot alignment.
+   Each column is now laid out on the same 8-slot vertical grid:
+   R32 centers at 1/8 slots, R16 at pair midpoints, QF at quarter midpoints,
+   SF/Final at center. This keeps yellow connector lengths uniform. */
+.knockout-board,
+.viewer-board,
+.admin-bracket {
+  --bracket-row-gap: clamp(12px, 1vw, 22px);
+  --bracket-stack-min-h: calc((var(--fixture-card-h) * 8) + (var(--bracket-row-gap) * 7));
+}
+
+.bracket-column {
+  min-height: calc(var(--bracket-stack-min-h) + 48px) !important;
+}
+
+.match-stack {
+  position: relative !important;
+  flex: 1 1 auto !important;
+  min-height: var(--bracket-stack-min-h) !important;
+  height: var(--bracket-stack-min-h) !important;
+  display: block !important;
+  padding-block: 0 !important;
+  gap: 0 !important;
+  justify-content: initial !important;
+}
+
+.bracket-column[data-round="Round of 16"] .match-stack,
+.bracket-column[data-round="Quarterfinals"] .match-stack,
+.bracket-column[data-round="Semifinals"] .match-stack,
+.bracket-column.final-column .match-stack {
+  padding-block: 0 !important;
+}
+
+.match-stack > .match-card.fixture-card {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: calc(var(--slot-center, 50) * 1%) !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  z-index: 2 !important;
+}
+
+.final-column .match-stack > .match-card.fixture-card {
+  top: 50% !important;
+}
+
+.final-column .champion-card {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: calc(50% + (var(--fixture-card-h) / 2) + clamp(12px, 1vw, 20px)) !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 3 !important;
+}
+
+.viewer-board .match-stack,
+.admin-bracket .match-stack {
+  min-height: var(--bracket-stack-min-h) !important;
+  height: var(--bracket-stack-min-h) !important;
+}
+
+.connector-svg {
+  z-index: 1 !important;
+}
+
+.connector-path {
+  stroke-width: 2.15 !important;
+}
+
+/* v2.20: cleaner champion trophy card */
+.champion-card {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 218, 92, 0.36), transparent 48%),
+    linear-gradient(180deg, #fff8d7 0%, #fffdf2 100%) !important;
+  border: 2px solid rgba(245, 158, 11, 0.82) !important;
+  border-radius: clamp(14px, 1vw, 20px) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+    0 14px 30px rgba(15, 23, 42, 0.18),
+    0 0 24px rgba(245, 158, 11, 0.22) !important;
+}
+
+.champion-card .muted,
+.champion-team strong {
+  display: none !important;
+}
+
+.champion-heading {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  margin-bottom: clamp(7px, 0.55vw, 11px) !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(245, 158, 11, 0.28) !important;
+  color: #8a4b00 !important;
+  font-size: clamp(12px, 0.74vw, 15px) !important;
+  font-weight: 1000 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+}
+
+.champion-trophy {
+  font-size: clamp(16px, 1.05vw, 21px) !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 3px 6px rgba(146, 64, 14, 0.22)) !important;
+}
+
+.champion-team {
+  gap: clamp(5px, 0.42vw, 8px) !important;
+}
+
+.champion-flag {
+  font-size: clamp(34px, 2.2vw, 50px) !important;
+}
+
+.champion-code {
+  font-size: clamp(19px, 1.3vw, 28px) !important;
+  font-weight: 1000 !important;
+  letter-spacing: 0.02em !important;
+  color: #0f172a !important;
+}
+
+
+/* v2.21: arrowheads for semifinal → final and final → champion */
+.connector-arrow {
+  stroke: rgba(255, 215, 102, 0.9) !important;
+  stroke-width: 2.8 !important;
+}
+
+.connector-arrow-head {
+  fill: rgba(255, 215, 102, 0.98);
+  filter: drop-shadow(0 0 4px rgba(255, 215, 102, 0.7));
+}
+
+.champion-connector {
+  stroke-width: 3 !important;
+  stroke-dasharray: none !important;
+}
+
+/* v2.22: make final-stage arrowheads actually visible outside card edges */
+.connector-svg {
+  z-index: 2 !important;
+}
+.match-card.fixture-card,
+.champion-card {
+  z-index: 3 !important;
+}
+.final-stage-connector {
+  stroke: rgba(255, 218, 96, 0.96) !important;
+  stroke-width: 3.2 !important;
+  stroke-linecap: round !important;
+  filter: drop-shadow(0 0 5px rgba(255, 218, 96, 0.55)) !important;
+}
+.visible-arrow-head {
+  fill: rgba(255, 218, 96, 0.98) !important;
+  stroke: rgba(146, 64, 14, 0.45) !important;
+  stroke-width: 0.6 !important;
+  filter: drop-shadow(0 0 5px rgba(255, 218, 96, 0.75)) !important;
+}
+.final-visible-arrow,
+.champion-visible-arrow {
+  opacity: 1 !important;
+}
+
+/* v2.23: wider friend bracket viewer modal */
+.prediction-dialog {
+  width: 99.5vw !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
+
+.prediction-dialog::backdrop {
+  background: rgba(2, 8, 23, 0.72) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.viewer-card {
+  width: 100% !important;
+  max-width: none !important;
+  border-radius: clamp(16px, 1.25vw, 24px) !important;
+  padding: clamp(12px, 0.9vw, 18px) !important;
+}
+
+.viewer-scroll {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: 82vh !important;
+  overflow: auto !important;
+  padding: clamp(8px, 0.65vw, 14px) !important;
+}
+
+.viewer-board {
+  min-width: max(100%, 1880px) !important;
+}
