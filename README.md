@@ -1,6 +1,6 @@
 # World Cup 2026 Bracket + Score Predictor
 
-A tiny, shareable, unofficial World Cup 2026 Round-of-32 knockout predictor for a small private friend group. It is built as a static website with optional Firebase online sync.
+A tiny, shareable, unofficial World Cup 2026 Round-of-32 knockout predictor for a small private friend group. It is built as a static website with optional Firebase online sync. Made with the assistance of ChatGPT
 
 This is for friendly no-money predictions only. Do not use it for betting, paid games, or anything involving gambling.
 
