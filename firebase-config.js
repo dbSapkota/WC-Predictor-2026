@@ -13,7 +13,9 @@ window.FIREBASE_CONFIG = {
   projectId: "wc-predictor-2026-dbb39",
   storageBucket: "wc-predictor-2026-dbb39.firebasestorage.app",
   messagingSenderId: "513966780692",
-  appId: "1:513966780692:web:31042f80a8e4db1ca41201"
+  appId: "1:513966780692:web:31042f80a8e4db1ca41201",
+  measurementId: "G-7F3HW2ZWEC"
+
 };
 
 window.BRACKET_APP_SETTINGS = {
