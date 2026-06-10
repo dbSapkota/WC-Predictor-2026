@@ -118,7 +118,8 @@
     extraRulesInput: document.getElementById("extraRulesInput"),
     saveRulesBtn: document.getElementById("saveRulesBtn"),
     officialBracket: document.getElementById("officialBracket"),
-    saveResultsBtn: document.getElementById("saveResultsBtn")
+    saveResultsBtn: document.getElementById("saveResultsBtn"),
+    deleteBracketBtn: null
   };
 
   const state = {
@@ -164,6 +165,37 @@
   function setMessage(text, type = "") {
     els.joinMessage.textContent = text;
     els.joinMessage.className = `message ${type}`.trim();
+  }
+
+  function clearCurrentPlayer() {
+    state.playerId = "";
+    state.playerName = "";
+    state.playerPinHash = "";
+    state.userPicks = {};
+    state.userScorePredictions = {};
+    localStorage.removeItem("wc26_playerKey");
+    localStorage.removeItem("wc26_playerName");
+    localStorage.removeItem("wc26_playerPinHash");
+    if (els.nameInput) els.nameInput.value = "";
+    if (els.pinInput) els.pinInput.value = "";
+  }
+
+  function ensureDeleteBracketButton() {
+    if (els.deleteBracketBtn) return els.deleteBracketBtn;
+    const joinPanel = document.getElementById("joinPanel");
+    const actionsRow = joinPanel?.querySelector(".actions");
+    if (!actionsRow) return null;
+
+    actionsRow.classList.add("join-actions");
+    const btn = document.createElement("button");
+    btn.id = "deleteBracketBtn";
+    btn.type = "button";
+    btn.className = "danger delete-bracket-btn hidden";
+    btn.textContent = "Delete my bracket";
+    btn.title = "Permanently remove your bracket from the database";
+    actionsRow.appendChild(btn);
+    els.deleteBracketBtn = btn;
+    return btn;
   }
 
   function roundOfMatch(matchId) {
@@ -479,6 +511,13 @@
     els.toggleLockBtn.textContent = state.config.locked ? "Unlock predictions" : "Lock predictions";
   }
 
+  function medalForRank(rank) {
+    if (rank === 1) return '<span class="rank-medal gold" title="Gold medal">1</span>';
+    if (rank === 2) return '<span class="rank-medal silver" title="Silver medal">2</span>';
+    if (rank === 3) return '<span class="rank-medal bronze" title="Bronze medal">3</span>';
+    return `<span class="rank-number">${rank}</span>`;
+  }
+
   function renderLeaderboard() {
     const rows = state.allPredictions
       .map(entry => {
@@ -506,10 +545,37 @@
       return;
     }
 
-    els.leaderboard.className = "leaderboard";
+    els.leaderboard.className = "leaderboard leaderboard-layout";
+    const otherRows = rows.filter(row => !state.playerId || row.playerId !== state.playerId);
+    const otherOptions = otherRows.map(row => `<option value="${escapeHtml(row.playerId)}">${escapeHtml(row.name)}</option>`).join("");
+    const quickButtons = otherRows.map(row => `
+      <button type="button" class="member-pill" data-view-player="${escapeHtml(row.playerId)}">
+        <span>${escapeHtml(row.name)}</span>
+        <small>${row.score} pts</small>
+      </button>
+    `).join("");
+
+    const viewerPanel = otherRows.length
+      ? `
+        <div class="viewer-select-row">
+          <select id="otherPicksSelect" aria-label="Select another player to view">
+            <option value="">Choose a friend…</option>
+            ${otherOptions}
+          </select>
+          <button type="button" id="viewOtherPicksBtn" class="primary">View picks</button>
+        </div>
+        <div class="member-list">${quickButtons}</div>
+      `
+      : `
+        <div class="empty-state">
+          <strong>No other brackets yet.</strong>
+          <span>Once your friends save their brackets, their usernames will appear here.</span>
+        </div>
+      `;
+
     const body = rows.map((row, index) => `
       <tr class="leaderboard-row" data-view-player="${escapeHtml(row.playerId)}" tabindex="0" title="Click to view ${escapeHtml(row.name)}'s bracket">
-        <td>${index + 1}</td>
+        <td>${medalForRank(index + 1)}</td>
         <td><button type="button" class="leaderboard-name" data-view-player="${escapeHtml(row.playerId)}">${escapeHtml(row.name)}</button></td>
         <td><strong>${row.score}</strong><div class="breakdown">W ${row.winnerPoints} · Score ${row.exactPoints} · GD ${row.gdPoints}</div></td>
         <td>${escapeHtml(row.champion)}</td>
@@ -517,12 +583,41 @@
     `).join("");
 
     els.leaderboard.innerHTML = `
-      <table>
-        <thead><tr><th>Rank</th><th>Name</th><th>Total points</th><th>Champion pick</th></tr></thead>
-        <tbody>${body}</tbody>
-      </table>
-      <p class="leaderboard-hint">Click any name to view that person's full bracket.</p>
+      <section class="other-picks-panel">
+        <div class="mini-section-header">
+          <div>
+            <p class="eyebrow">League view</p>
+            <h3>View other's picks</h3>
+            <p class="muted">Select another username to open their full bracket and score predictions.</p>
+          </div>
+        </div>
+        ${viewerPanel}
+      </section>
+
+      <section class="leaderboard-table-panel">
+        <div class="mini-section-header leaderboard-mini-header">
+          <div>
+            <p class="eyebrow">Standings</p>
+            <h3><span class="trophy-icon" aria-hidden="true">🏆</span> Leaderboard</h3>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Rank</th><th>Name</th><th>Total points</th><th>Champion pick</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </section>
     `;
+
+    const select = els.leaderboard.querySelector("#otherPicksSelect");
+    const viewButton = els.leaderboard.querySelector("#viewOtherPicksBtn");
+    if (select && viewButton) {
+      viewButton.addEventListener("click", () => {
+        if (select.value) openPredictionViewer(select.value);
+      });
+      select.addEventListener("change", () => {
+        if (select.value) openPredictionViewer(select.value);
+      });
+    }
 
     els.leaderboard.querySelectorAll("[data-view-player]").forEach(el => {
       el.addEventListener("click", event => {
@@ -672,6 +767,8 @@
 
   function renderAll() {
     const joined = Boolean(state.playerId && state.playerName);
+    ensureDeleteBracketButton();
+    if (els.deleteBracketBtn) els.deleteBracketBtn.classList.toggle("hidden", !joined);
     els.nameInput.value = state.playerName || els.nameInput.value;
     els.playerPanel.classList.toggle("hidden", !joined);
     els.bracketSection.classList.toggle("hidden", !joined);
@@ -856,6 +953,46 @@
     setMessage("Saved to the online database.", "good");
   }
 
+  async function deleteMyBracket() {
+    if (!state.playerId || !state.playerName || !state.playerPinHash) {
+      return setMessage("Load your bracket with username + PIN first, then delete it.", "error");
+    }
+
+    const confirmText = window.prompt(
+      `This permanently deletes ${state.playerName}'s bracket from the database.\n\nType DELETE to confirm.`
+    );
+    if (confirmText !== "DELETE") {
+      return setMessage("Delete cancelled.", "");
+    }
+
+    try {
+      if (state.online) {
+        const docRef = state.predictionsRef.doc(state.playerId);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data() || {};
+          if (data.pinHash && data.pinHash !== state.playerPinHash) {
+            return setMessage("PIN mismatch. Reload with the correct username and PIN before deleting.", "error");
+          }
+          await docRef.delete();
+        }
+      } else {
+        state.allPredictions = state.allPredictions.filter(entry =>
+          entry.playerId !== state.playerId && entry.usernameKey !== state.playerId
+        );
+        saveLocalData();
+      }
+
+      if (els.predictionDialog?.open) els.predictionDialog.close();
+      clearCurrentPlayer();
+      renderAll();
+      setMessage("Your bracket was deleted. You can create a new one anytime.", "good");
+    } catch (err) {
+      console.error(err);
+      setMessage("Could not delete your bracket. Check Firebase rules and try again.", "error");
+    }
+  }
+
   async function saveConfig(partial) {
     state.config = normalizeConfig({ ...state.config, ...partial });
     if (state.online) {
@@ -942,7 +1079,8 @@
 
   function attachEvents() {
     const versionBadge = document.getElementById("appVersionBadge");
-    if (versionBadge) versionBadge.textContent = "v2.5 · responsive bracket";
+    if (versionBadge) versionBadge.textContent = "v2.7 · delete bracket";
+    ensureDeleteBracketButton();
     els.nameInput.value = state.playerName;
     els.joinBtn.addEventListener("click", joinBracket);
     els.pinInput.addEventListener("keydown", event => { if (event.key === "Enter") joinBracket(); });
@@ -955,6 +1093,7 @@
         setMessage("Copy failed. Copy the address from your browser bar.", "error");
       }
     });
+    if (els.deleteBracketBtn) els.deleteBracketBtn.addEventListener("click", deleteMyBracket);
     els.saveBtn.addEventListener("click", savePrediction);
     els.resetBtn.addEventListener("click", () => {
       state.userPicks = {};
