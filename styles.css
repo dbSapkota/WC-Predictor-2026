@@ -484,3 +484,432 @@ footer { padding: 18px clamp(18px, 4vw, 56px) 38px; color: #fff; }
   .panel { padding: 18px; }
   .bracket-headline { display: block; }
 }
+
+/* v2.4 visual + tree fixes */
+:root {
+  --bg: #071421;
+  --panel: #fbfdff;
+  --ink: #0f172a;
+  --muted: #647084;
+  --line: #dce5f2;
+  --line-strong: #b8c5d8;
+  --accent: #0b6b43;
+  --accent-ink: #ffffff;
+  --gold: #f6c453;
+  --good: #15803d;
+  --warn: #b7791f;
+  --bad: #b91c1c;
+  --shadow: 0 20px 55px rgba(2, 8, 23, 0.18);
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(34, 197, 94, 0.22), transparent 30rem),
+    radial-gradient(circle at 88% 8%, rgba(59, 130, 246, 0.18), transparent 30rem),
+    radial-gradient(circle at 50% 108%, rgba(246, 196, 83, 0.16), transparent 34rem),
+    linear-gradient(135deg, #071421 0%, #0c1b2c 44%, #0e2a2a 100%);
+  background-attachment: fixed;
+}
+
+.hero { padding: 34px clamp(12px, 2.4vw, 32px) 18px; }
+main { padding: 0 clamp(12px, 2.4vw, 32px) 58px; }
+footer { padding-inline: clamp(12px, 2.4vw, 32px); }
+
+.panel,
+.status-card,
+.match-card,
+.champion-card {
+  box-shadow: 0 18px 46px rgba(2, 8, 23, 0.16);
+}
+
+.version-badge {
+  background: rgba(5, 46, 32, 0.78);
+  border-color: rgba(246, 196, 83, 0.82);
+  color: #fff8d6;
+}
+
+.bracket-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 16px 0 30px;
+  scrollbar-color: rgba(246, 196, 83, 0.55) rgba(255, 255, 255, 0.14);
+}
+
+.knockout-board {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 210px 190px 178px 168px 220px 168px 178px 190px 210px;
+  gap: 12px;
+  min-width: 1836px;
+  padding: 14px;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(214, 226, 243, 0.26);
+  background:
+    radial-gradient(circle at center, rgba(246, 196, 83, 0.13), transparent 23rem),
+    linear-gradient(180deg, rgba(255,255,255,0.105), rgba(255,255,255,0.035)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 72px),
+    linear-gradient(135deg, rgba(21, 38, 56, 0.96), rgba(14, 39, 45, 0.98));
+}
+
+.knockout-board::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-1px);
+  background: linear-gradient(180deg, transparent, rgba(246, 196, 83, 0.56), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.connector-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 0;
+}
+
+.connector-path {
+  fill: none;
+  stroke: rgba(246, 196, 83, 0.72);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  filter: url(#connectorGlow);
+  vector-effect: non-scaling-stroke;
+}
+
+.bracket-column {
+  min-height: 1120px;
+  position: relative;
+  z-index: 2;
+}
+
+.bracket-column[data-round="Round of 16"] .match-stack { padding-block: 48px; }
+.bracket-column[data-round="Quarterfinals"] .match-stack { padding-block: 128px; }
+.bracket-column[data-round="Semifinals"] .match-stack { padding-block: 276px; }
+.bracket-column.final-column .match-stack { padding-block: 404px; }
+
+.match-stack { gap: 12px; }
+
+.round-title {
+  background: linear-gradient(135deg, rgba(4, 41, 28, 0.96), rgba(10, 94, 60, 0.82));
+  border-color: rgba(246, 196, 83, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.final-column {
+  border-inline: 1px dashed rgba(246, 196, 83, 0.42);
+  padding-inline: 6px;
+}
+
+.match-card {
+  border-radius: 16px;
+  padding: 10px;
+  border-color: rgba(225, 233, 245, 0.96);
+  background: rgba(252, 254, 255, 0.97);
+}
+
+.match-card::after { display: none !important; }
+
+.match-meta { font-size: 11px; }
+.choice {
+  min-height: 42px;
+  margin: 6px 0;
+  padding: 10px 11px;
+}
+.score-row { gap: 7px; }
+.score-row input { padding: 8px 6px; }
+
+.champion-card {
+  background: linear-gradient(135deg, #fff4c4, #ffffff 68%);
+  border-color: rgba(246, 196, 83, 0.95);
+}
+
+/* Leaderboard click-to-view */
+.leaderboard-row { cursor: pointer; }
+.leaderboard-row:hover td { background: #eef8f1; }
+.leaderboard-row:focus-within td,
+.leaderboard-row:focus td { background: #e7f5ee; outline: none; }
+.leaderboard-name {
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 1000;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.leaderboard-hint {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+/* Friend bracket viewer */
+.prediction-dialog {
+  border: 0;
+  padding: 0;
+  width: min(96vw, 1880px);
+  max-height: 92vh;
+  background: transparent;
+}
+.prediction-dialog::backdrop {
+  background: rgba(2, 8, 23, 0.68);
+  backdrop-filter: blur(4px);
+}
+.viewer-card {
+  border-radius: 26px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 26px 80px rgba(0,0,0,0.36);
+}
+.viewer-header { margin-bottom: 12px; }
+.viewer-scroll {
+  max-height: 72vh;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #081827, #0e2a2a);
+}
+.viewer-board {
+  min-width: 1836px;
+}
+.viewer-bracket .choice { cursor: default; }
+.viewer-bracket .score-row input { pointer-events: none; }
+.viewer-bracket .choice:not([disabled]):hover { box-shadow: none; }
+
+.admin-bracket {
+  min-width: 1836px;
+  background:
+    repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.045) 0 1px, transparent 1px 72px),
+    linear-gradient(135deg, #edf4fb, #f8fbff);
+}
+
+@media (max-width: 1200px) {
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket { min-width: 1836px; }
+}
+
+
+/* v2.5 responsive bracket sizing
+   The bracket now uses percentage / fr columns instead of a giant fixed-width board.
+   This keeps the whole Round-of-32-to-Final tree inside the visible window at 100% zoom. */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+main {
+  padding-left: clamp(6px, 1.1vw, 22px);
+  padding-right: clamp(6px, 1.1vw, 22px);
+}
+
+.bracket-wrap {
+  width: 100%;
+  overflow: visible;
+  padding: clamp(8px, 1vw, 16px) 0 clamp(18px, 2vw, 30px);
+}
+
+.bracket-headline {
+  padding-inline: clamp(2px, 0.4vw, 8px);
+  margin-bottom: clamp(8px, 0.8vw, 14px);
+}
+
+.knockout-board,
+.viewer-board,
+.admin-bracket {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.knockout-board {
+  --board-gap: clamp(4px, 0.55vw, 12px);
+  --board-pad: clamp(6px, 0.75vw, 14px);
+  --card-pad: clamp(4px, 0.42vw, 8px);
+  --card-radius: clamp(10px, 0.85vw, 16px);
+  --choice-h: clamp(24px, 1.75vw, 34px);
+  --choice-pad-y: clamp(4px, 0.35vw, 7px);
+  --choice-pad-x: clamp(5px, 0.48vw, 9px);
+  --card-font: clamp(8px, 0.58vw, 11px);
+  --tiny-font: clamp(6px, 0.48vw, 10px);
+  --title-font: clamp(7px, 0.55vw, 11px);
+  --input-h: clamp(20px, 1.45vw, 28px);
+
+  grid-template-columns:
+    minmax(0, 1.12fr)
+    minmax(0, 0.98fr)
+    minmax(0, 0.88fr)
+    minmax(0, 0.80fr)
+    minmax(0, 1.08fr)
+    minmax(0, 0.80fr)
+    minmax(0, 0.88fr)
+    minmax(0, 0.98fr)
+    minmax(0, 1.12fr) !important;
+  gap: var(--board-gap) !important;
+  padding: var(--board-pad) !important;
+  overflow: visible !important;
+  border-radius: clamp(14px, 1.4vw, 28px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(246, 196, 83, 0.12), transparent 28%),
+    radial-gradient(circle at 14% 7%, rgba(14, 165, 122, 0.18), transparent 22%),
+    radial-gradient(circle at 86% 92%, rgba(59, 130, 246, 0.14), transparent 24%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px clamp(46px, 3.8vw, 72px)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.026) 0 1px, transparent 1px clamp(46px, 3.8vw, 72px)),
+    linear-gradient(135deg, rgba(18, 34, 52, 0.98), rgba(12, 42, 45, 0.98));
+}
+
+.bracket-column {
+  min-width: 0;
+  min-height: clamp(740px, 58vw, 1080px) !important;
+  gap: clamp(5px, 0.5vw, 10px);
+}
+
+.match-stack {
+  min-width: 0;
+  gap: clamp(5px, 0.48vw, 10px) !important;
+}
+
+.bracket-column[data-round="Round of 16"] .match-stack { padding-block: clamp(22px, 2.5vw, 44px) !important; }
+.bracket-column[data-round="Quarterfinals"] .match-stack { padding-block: clamp(60px, 6.2vw, 118px) !important; }
+.bracket-column[data-round="Semifinals"] .match-stack { padding-block: clamp(145px, 13vw, 250px) !important; }
+.bracket-column.final-column .match-stack { padding-block: clamp(215px, 20vw, 365px) !important; }
+
+.round-title {
+  font-size: var(--title-font) !important;
+  padding: clamp(5px, 0.55vw, 9px) clamp(5px, 0.7vw, 10px) !important;
+  letter-spacing: clamp(0.04em, 0.55vw, 0.12em);
+  white-space: nowrap;
+}
+
+.final-column {
+  padding-inline: clamp(2px, 0.35vw, 6px) !important;
+}
+
+.match-card {
+  min-width: 0;
+  border-radius: var(--card-radius) !important;
+  padding: var(--card-pad) !important;
+}
+
+.match-meta {
+  gap: 4px !important;
+  font-size: var(--tiny-font) !important;
+  line-height: 1.1;
+  margin-bottom: clamp(3px, 0.35vw, 6px) !important;
+}
+.match-meta small {
+  font-size: var(--tiny-font) !important;
+  line-height: 1.05;
+}
+
+.choice {
+  min-height: var(--choice-h) !important;
+  margin: clamp(3px, 0.28vw, 5px) 0 !important;
+  padding: var(--choice-pad-y) var(--choice-pad-x) !important;
+  border-radius: clamp(7px, 0.7vw, 12px) !important;
+  gap: 4px !important;
+  font-size: var(--card-font) !important;
+  line-height: 1.06;
+}
+.choice span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.badge {
+  padding: clamp(2px, 0.2vw, 4px) clamp(4px, 0.35vw, 7px) !important;
+  font-size: clamp(6px, 0.45vw, 9px) !important;
+}
+
+.score-row {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  gap: clamp(3px, 0.35vw, 6px) !important;
+  margin-top: clamp(4px, 0.35vw, 7px) !important;
+  padding-top: clamp(4px, 0.35vw, 7px) !important;
+}
+.score-row label {
+  min-width: 0;
+  font-size: var(--tiny-font) !important;
+  line-height: 1.05 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.score-row input {
+  height: var(--input-h) !important;
+  min-height: 0 !important;
+  padding: 1px 3px !important;
+  margin-top: clamp(2px, 0.25vw, 5px) !important;
+  border-radius: clamp(6px, 0.55vw, 10px) !important;
+  font-size: var(--card-font) !important;
+}
+.score-row .dash {
+  padding-bottom: clamp(4px, 0.45vw, 9px) !important;
+  font-size: var(--card-font) !important;
+}
+
+.match-points {
+  font-size: var(--tiny-font) !important;
+  margin-top: clamp(4px, 0.35vw, 7px) !important;
+}
+
+.champion-card {
+  padding: clamp(8px, 0.75vw, 14px) !important;
+  border-radius: var(--card-radius) !important;
+}
+.champion-card strong {
+  font-size: clamp(12px, 1vw, 18px) !important;
+}
+
+.connector-path {
+  stroke-width: clamp(1.4px, 0.16vw, 2.25px) !important;
+  stroke: rgba(246, 196, 83, 0.8) !important;
+}
+
+.prediction-dialog {
+  width: min(98vw, 1760px) !important;
+}
+.viewer-card {
+  padding: clamp(10px, 1vw, 20px) !important;
+}
+.viewer-scroll {
+  overflow: visible !important;
+  max-height: none !important;
+  padding: clamp(5px, 0.8vw, 12px) !important;
+}
+
+.admin-bracket {
+  overflow: visible !important;
+}
+
+@media (max-width: 1400px) {
+  main { padding-left: 4px; padding-right: 4px; }
+  .knockout-board {
+    --board-gap: 5px;
+    --board-pad: 6px;
+    --choice-h: 24px;
+    --card-font: 8px;
+    --tiny-font: 6px;
+    --title-font: 7px;
+  }
+  .bracket-column { min-height: 760px !important; }
+}
+
+@media (max-width: 900px) {
+  body { overflow-x: auto; }
+  .bracket-wrap { overflow-x: auto; }
+  .knockout-board,
+  .viewer-board,
+  .admin-bracket {
+    min-width: 860px !important;
+  }
+}

@@ -126,6 +126,9 @@
     db: null,
     gameRef: null,
     predictionsRef: null,
+    // v2.3 account mode: the Firestore document id is based on the username,
+    // while the PIN is stored as a hash inside that document. This lets the same
+    // username + PIN open the same bracket from any computer.
     playerId: localStorage.getItem("wc26_playerKey") || "",
     playerName: localStorage.getItem("wc26_playerName") || "",
     playerPinHash: localStorage.getItem("wc26_playerPinHash") || "",
@@ -297,15 +300,18 @@
   function renderBracket(container, picks, scores, options = {}) {
     const isAdmin = options.mode === "admin";
     const isUser = options.mode === "user";
+    const isViewer = options.mode === "viewer";
     const compareResults = Boolean(options.compareResults);
     const cleanCurrentPicks = cleanPicks(picks || {});
     const cleanCurrentScores = cleanScoreMap(scores || {});
     container.innerHTML = "";
+    container.classList.toggle("viewer-bracket", isViewer);
 
     BRACKET_LAYOUT.forEach(column => {
       const columnEl = document.createElement("section");
       columnEl.className = `bracket-column ${column.side}-side ${column.key === "final" ? "final-column" : ""}`.trim();
       columnEl.dataset.round = column.round;
+      columnEl.dataset.side = column.side;
 
       const title = document.createElement("div");
       title.className = "round-title";
@@ -315,7 +321,7 @@
       const stack = document.createElement("div");
       stack.className = "match-stack";
       column.ids.forEach(matchId => {
-        stack.appendChild(renderMatchCard(matchId, cleanCurrentPicks, cleanCurrentScores, { isAdmin, isUser, compareResults }));
+        stack.appendChild(renderMatchCard(matchId, cleanCurrentPicks, cleanCurrentScores, { mode: options.mode, isAdmin, isUser, isViewer, compareResults }));
       });
 
       if (column.key === "final") {
@@ -328,16 +334,19 @@
       columnEl.appendChild(stack);
       container.appendChild(columnEl);
     });
+
+    scheduleConnectorDraw(container);
   }
 
   function renderMatchCard(matchId, picks, scores, options) {
-    const { isAdmin, isUser, compareResults } = options;
+    const { isAdmin, isUser, isViewer, compareResults } = options;
     const round = roundOfMatch(matchId);
     const teams = availableTeams(matchId, picks);
     const bothTeamsKnown = teams.every(team => !team.pending);
     const selectedWinner = picks[matchId];
     const card = document.createElement("article");
-    card.className = "match-card";
+    card.className = `match-card ${isViewer ? "view-only" : ""}`.trim();
+    card.dataset.matchId = matchId;
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
@@ -361,29 +370,37 @@
       }
 
       btn.innerHTML = `<span>${escapeHtml(team.label)}</span>${selected ? '<span class="badge">picked</span>' : ''}`;
-      btn.addEventListener("click", () => {
-        if (isAdmin) {
-          state.officialDraft[matchId] = team.id;
-          state.officialDraft = cleanPicks(state.officialDraft);
-          state.officialScoreDraft = cleanScoreMap(state.officialScoreDraft);
-          renderAdminTools();
-        } else {
-          state.userPicks[matchId] = team.id;
-          state.userPicks = cleanPicks(state.userPicks);
-          state.userScorePredictions = cleanScoreMap(state.userScorePredictions);
-          renderAll();
-        }
-      });
+      if (isAdmin || isUser) {
+        btn.addEventListener("click", () => {
+          if (isAdmin) {
+            state.officialDraft[matchId] = team.id;
+            state.officialDraft = cleanPicks(state.officialDraft);
+            state.officialScoreDraft = cleanScoreMap(state.officialScoreDraft);
+            renderAdminTools();
+          } else if (!state.config.locked) {
+            state.userPicks[matchId] = team.id;
+            state.userPicks = cleanPicks(state.userPicks);
+            state.userScorePredictions = cleanScoreMap(state.userScorePredictions);
+            renderAll();
+          }
+        });
+      }
       card.appendChild(btn);
     });
 
-    card.appendChild(renderScoreInputs(matchId, teams, cleanScoreMap(scores)[matchId], { isAdmin, isUser, compareResults, disabled: !bothTeamsKnown || (isUser && state.config.locked) }));
+    card.appendChild(renderScoreInputs(matchId, teams, cleanScoreMap(scores)[matchId], {
+      isAdmin,
+      isUser,
+      isViewer,
+      compareResults,
+      disabled: !bothTeamsKnown || isViewer || (isUser && state.config.locked)
+    }));
 
     if (compareResults && state.config.results?.[matchId]) {
       const b = matchBreakdown(picks, scores, matchId);
       const points = document.createElement("p");
       points.className = "match-points";
-      points.innerHTML = `Your points: <strong>${b.total}</strong> <span class="breakdown">winner ${b.win} · score ${b.exact} · GD ${b.gd}</span>`;
+      points.innerHTML = `Points: <strong>${b.total}</strong> <span class="breakdown">winner ${b.win} · score ${b.exact} · GD ${b.gd}</span>`;
       card.appendChild(points);
     }
 
@@ -422,7 +439,7 @@
         };
         if (options.isAdmin) {
           state.officialScoreDraft[matchId] = nextScore;
-        } else {
+        } else if (options.isUser && !state.config.locked) {
           state.userScorePredictions[matchId] = nextScore;
         }
       });
@@ -469,6 +486,7 @@
         const scores = cleanScoreMap(entry.scorePredictions || {});
         const scored = scoreEntry(picks, scores);
         return {
+          playerId: entry.playerId || entry.usernameKey || usernameKey(entry.name),
           name: entry.name || "Unnamed",
           score: scored.total,
           winnerPoints: scored.win,
@@ -490,9 +508,9 @@
 
     els.leaderboard.className = "leaderboard";
     const body = rows.map((row, index) => `
-      <tr>
+      <tr class="leaderboard-row" data-view-player="${escapeHtml(row.playerId)}" tabindex="0" title="Click to view ${escapeHtml(row.name)}'s bracket">
         <td>${index + 1}</td>
-        <td>${escapeHtml(row.name)}</td>
+        <td><button type="button" class="leaderboard-name" data-view-player="${escapeHtml(row.playerId)}">${escapeHtml(row.name)}</button></td>
         <td><strong>${row.score}</strong><div class="breakdown">W ${row.winnerPoints} · Score ${row.exactPoints} · GD ${row.gdPoints}</div></td>
         <td>${escapeHtml(row.champion)}</td>
       </tr>
@@ -503,7 +521,22 @@
         <thead><tr><th>Rank</th><th>Name</th><th>Total points</th><th>Champion pick</th></tr></thead>
         <tbody>${body}</tbody>
       </table>
+      <p class="leaderboard-hint">Click any name to view that person's full bracket.</p>
     `;
+
+    els.leaderboard.querySelectorAll("[data-view-player]").forEach(el => {
+      el.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        openPredictionViewer(el.dataset.viewPlayer);
+      });
+      el.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPredictionViewer(el.dataset.viewPlayer);
+        }
+      });
+    });
   }
 
   function renderRules() {
@@ -538,6 +571,103 @@
   function showRules() {
     renderRules();
     if (typeof els.rulesDialog.showModal === "function") els.rulesDialog.showModal();
+  }
+
+
+
+  function ensurePredictionDialog() {
+    if (els.predictionDialog) return;
+    const dialog = document.createElement("dialog");
+    dialog.id = "predictionDialog";
+    dialog.className = "prediction-dialog";
+    dialog.innerHTML = `
+      <div class="viewer-card">
+        <div class="section-header viewer-header">
+          <div>
+            <p class="eyebrow">Friend bracket</p>
+            <h2 id="predictionViewerTitle">Bracket</h2>
+            <p id="predictionViewerSummary" class="muted"></p>
+          </div>
+          <button id="closePredictionViewerBtn" class="secondary">Close</button>
+        </div>
+        <div class="viewer-scroll">
+          <div id="predictionViewerBracket" class="bracket knockout-board viewer-board"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+    els.predictionDialog = dialog;
+    els.predictionViewerTitle = dialog.querySelector("#predictionViewerTitle");
+    els.predictionViewerSummary = dialog.querySelector("#predictionViewerSummary");
+    els.predictionViewerBracket = dialog.querySelector("#predictionViewerBracket");
+    dialog.querySelector("#closePredictionViewerBtn").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", event => {
+      if (event.target === dialog) dialog.close();
+    });
+  }
+
+  function openPredictionViewer(playerId) {
+    ensurePredictionDialog();
+    const entry = state.allPredictions.find(item => (item.playerId || item.usernameKey || usernameKey(item.name)) === playerId);
+    if (!entry) return;
+    const picks = cleanPicks(entry.picks || {});
+    const scores = cleanScoreMap(entry.scorePredictions || {});
+    const scored = scoreEntry(picks, scores);
+    els.predictionViewerTitle.textContent = `${entry.name || "Unnamed"}'s picks`;
+    els.predictionViewerSummary.innerHTML = `Total: <strong>${scored.total}</strong> · Champion: <strong>${escapeHtml(championFrom(picks))}</strong> · Winner ${scored.win} · Exact score ${scored.exact} · Goal difference ${scored.gd}`;
+    if (typeof els.predictionDialog.showModal === "function" && !els.predictionDialog.open) els.predictionDialog.showModal();
+    renderBracket(els.predictionViewerBracket, picks, scores, { mode: "viewer", compareResults: true });
+  }
+
+  function scheduleConnectorDraw(container) {
+    window.requestAnimationFrame(() => drawConnectors(container));
+  }
+
+  function drawConnectors(container) {
+    if (!container || !container.isConnected) return;
+    container.querySelectorAll(".connector-svg").forEach(el => el.remove());
+
+    const boardRect = container.getBoundingClientRect();
+    const width = Math.max(container.scrollWidth, Math.ceil(boardRect.width));
+    const height = Math.max(container.scrollHeight, Math.ceil(boardRect.height));
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "connector-svg");
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("aria-hidden", "true");
+
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+    filter.setAttribute("id", "connectorGlow");
+    filter.innerHTML = `<feGaussianBlur stdDeviation="2.1" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>`;
+    defs.appendChild(filter);
+    svg.appendChild(defs);
+
+    const cardFor = id => container.querySelector(`.match-card[data-match-id="${id}"]`);
+    ALL_MATCH_IDS.forEach(parentId => {
+      const parent = cardFor(parentId);
+      if (!parent) return;
+      MATCHES[parentId].slots.forEach(slot => {
+        if (!slot.winnerOf) return;
+        const child = cardFor(slot.winnerOf);
+        if (!child) return;
+        const p = parent.getBoundingClientRect();
+        const c = child.getBoundingClientRect();
+        const childIsLeft = (c.left + c.width / 2) < (p.left + p.width / 2);
+        const x1 = childIsLeft ? c.right - boardRect.left : c.left - boardRect.left;
+        const y1 = c.top - boardRect.top + c.height / 2;
+        const x2 = childIsLeft ? p.left - boardRect.left : p.right - boardRect.left;
+        const y2 = p.top - boardRect.top + p.height / 2;
+        const mid = x1 + (x2 - x1) * 0.5;
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${mid.toFixed(1)} ${y1.toFixed(1)}, ${mid.toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`);
+        path.setAttribute("class", "connector-path");
+        svg.appendChild(path);
+      });
+    });
+
+    container.prepend(svg);
   }
 
   function renderAll() {
@@ -790,6 +920,7 @@
       .replaceAll("'", "&#039;");
   }
 
+
   function usernameKey(name) {
     return String(name || "")
       .trim()
@@ -810,6 +941,8 @@
   }
 
   function attachEvents() {
+    const versionBadge = document.getElementById("appVersionBadge");
+    if (versionBadge) versionBadge.textContent = "v2.5 · responsive bracket";
     els.nameInput.value = state.playerName;
     els.joinBtn.addEventListener("click", joinBracket);
     els.pinInput.addEventListener("keydown", event => { if (event.key === "Enter") joinBracket(); });
@@ -835,6 +968,9 @@
     els.closeRulesBtn.addEventListener("click", () => els.rulesDialog.close());
     els.rulesDialog.addEventListener("click", event => {
       if (event.target === els.rulesDialog) els.rulesDialog.close();
+    });
+    window.addEventListener("resize", () => {
+      document.querySelectorAll(".knockout-board").forEach(board => scheduleConnectorDraw(board));
     });
 
     els.adminUnlockBtn.addEventListener("click", () => {
