@@ -8,20 +8,19 @@
   Firebase config values identify your project, but are not passwords.
 */
 window.FIREBASE_CONFIG = {
-  apiKey: "PASTE_FIREBASE_API_KEY",
-  authDomain: "PASTE_FIREBASE_AUTH_DOMAIN",
-  projectId: "PASTE_FIREBASE_PROJECT_ID",
-  storageBucket: "PASTE_FIREBASE_STORAGE_BUCKET",
-  messagingSenderId: "PASTE_FIREBASE_MESSAGING_SENDER_ID",
-  appId: "PASTE_FIREBASE_APP_ID"
+  apiKey: "AIzaSyCoVTuhtvQnbsZc9wesuddzVEtdDADR1sIe",
+  authDomain: "wc-predictor-2026-dbb39.firebaseapp.com",
+  projectId: "wc-predictor-2026-dbb39",
+  storageBucket: "wc-predictor-2026-dbb39.firebasestorage.app",
+  messagingSenderId: "513966780692",
+  appId: "1:513966780692:web:31042f80a8e4db1ca41201"
 };
 
 window.BRACKET_APP_SETTINGS = {
   eventId: "worldcup2026",
-  adminPassphrase: "change-this-before-sharing",
+  adminPassphrase: "pick-a-private-admin-password",
   maxParticipants: 8
 };
-
 // Change these values here if you want to change the automatic scoring later.
 window.BRACKET_SCORING = {
   winBasePoints: 5,
