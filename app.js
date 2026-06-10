@@ -746,7 +746,7 @@
 
     const meta = document.createElement("div");
     meta.className = "match-meta fixture-meta";
-    meta.innerHTML = `<span>${escapeHtml(MATCHES[matchId].title)}<small>${escapeHtml(round.name)}</small></span><span>World Cup 2026</span>`;
+    meta.innerHTML = `<span>${escapeHtml(MATCHES[matchId].title)}<small>${escapeHtml(round.name)}</small></span><span>Win: ${winnerPointsFor(matchId)} pts</span>`;
     card.appendChild(meta);
 
     card.appendChild(renderFlagMatchBody(matchId, teams, currentScore, {
@@ -1603,7 +1603,7 @@
 
   function attachEvents() {
     const versionBadge = document.getElementById("appVersionBadge");
-    if (versionBadge) versionBadge.textContent = "v2.22 · visible final arrows";
+    if (versionBadge) versionBadge.textContent = "v2.25 · overflow-safe cards";
     ensureDeleteBracketButton();
     els.nameInput.value = state.playerName;
     els.joinBtn.addEventListener("click", joinBracket);
