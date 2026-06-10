@@ -1,7 +1,7 @@
 (() => {
   const SETTINGS = window.BRACKET_APP_SETTINGS || {
     eventId: "worldcup2026",
-    adminPassphrase: "change-this-before-sharing",
+    adminPassphrase: "dbs123",
     maxParticipants: 8
   };
 

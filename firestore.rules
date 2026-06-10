@@ -19,7 +19,10 @@ service cloud.firestore {
           && validPrediction(playerId)
           && resource.data.pinHash == request.resource.data.pinHash;
 
-        allow delete: if false;
+        allow delete: if request.auth != null
+          && resource.data.playerId == playerId
+          && resource.data.usernameKey == playerId
+          && resource.data.pinHash is string;
       }
     }
 
