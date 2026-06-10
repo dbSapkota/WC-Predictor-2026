@@ -126,8 +126,9 @@
     db: null,
     gameRef: null,
     predictionsRef: null,
-    playerId: localStorage.getItem("wc26_playerId") || "",
+    playerId: localStorage.getItem("wc26_playerKey") || "",
     playerName: localStorage.getItem("wc26_playerName") || "",
+    playerPinHash: localStorage.getItem("wc26_playerPinHash") || "",
     userPicks: {},
     userScorePredictions: {},
     allPredictions: [],
@@ -593,7 +594,7 @@
       });
 
       state.predictionsRef.onSnapshot(snapshot => {
-        state.allPredictions = snapshot.docs.map(doc => doc.data());
+        state.allPredictions = snapshot.docs.map(doc => ({ playerId: doc.id, ...doc.data() }));
         renderAll();
       });
     } catch (err) {
@@ -624,39 +625,83 @@
     if (!name) return setMessage("Enter a display name first.", "error");
     if (pin.length < 4) return setMessage("Use a private PIN with at least 4 characters.", "error");
 
-    const hash = await sha256(`${name.toLowerCase()}|${pin}`);
-    state.playerId = `p_${hash.slice(0, 24)}`;
-    state.playerName = name;
-    localStorage.setItem("wc26_playerId", state.playerId);
-    localStorage.setItem("wc26_playerName", state.playerName);
+    const playerKey = usernameKey(name);
+    if (!playerKey) return setMessage("Use at least one letter or number in the username.", "error");
+
+    const pinHash = await sha256(`wc26-account-v2|${SETTINGS.eventId}|${playerKey}|${pin}`);
 
     if (state.online) {
-      const doc = await state.predictionsRef.doc(state.playerId).get();
-      const data = doc.exists ? doc.data() : {};
-      state.userPicks = cleanPicks(data.picks || {});
-      state.userScorePredictions = cleanScoreMap(data.scorePredictions || {});
+      const docRef = state.predictionsRef.doc(playerKey);
+      const doc = await docRef.get();
+
+      if (doc.exists) {
+        const data = doc.data() || {};
+        if (data.pinHash && data.pinHash !== pinHash) {
+          return setMessage("That username already exists, but the PIN is wrong.", "error");
+        }
+        state.playerId = playerKey;
+        state.playerName = data.name || name;
+        state.playerPinHash = pinHash;
+        state.userPicks = cleanPicks(data.picks || {});
+        state.userScorePredictions = cleanScoreMap(data.scorePredictions || {});
+        setMessage("Existing bracket loaded from the online database.", "good");
+      } else {
+        if (state.allPredictions.length >= SETTINGS.maxParticipants) {
+          return setMessage(`This private game is set to ${SETTINGS.maxParticipants} participants. Ask the admin to raise the limit.`, "error");
+        }
+        state.playerId = playerKey;
+        state.playerName = name;
+        state.playerPinHash = pinHash;
+        state.userPicks = {};
+        state.userScorePredictions = {};
+        await docRef.set({
+          playerId: playerKey,
+          usernameKey: playerKey,
+          name,
+          pinHash,
+          picks: {},
+          scorePredictions: {},
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        setMessage("New online bracket account created. Make your picks, then save them.", "good");
+      }
     } else {
-      const existing = state.allPredictions.find(entry => entry.playerId === state.playerId);
+      const existing = state.allPredictions.find(entry => entry.playerId === playerKey || entry.usernameKey === playerKey);
+      if (existing?.pinHash && existing.pinHash !== pinHash) {
+        return setMessage("That username already exists, but the PIN is wrong.", "error");
+      }
+      state.playerId = playerKey;
+      state.playerName = existing?.name || name;
+      state.playerPinHash = pinHash;
       state.userPicks = cleanPicks(existing?.picks || {});
       state.userScorePredictions = cleanScoreMap(existing?.scorePredictions || {});
+      setMessage("Bracket loaded in demo/local mode. It will not sync until Firebase is online.", "good");
     }
 
-    setMessage("Bracket loaded. Make your winner and score picks, then save them.", "good");
+    localStorage.setItem("wc26_playerKey", state.playerId);
+    localStorage.setItem("wc26_playerName", state.playerName);
+    localStorage.setItem("wc26_playerPinHash", state.playerPinHash);
     renderAll();
   }
 
   async function savePrediction() {
-    if (!state.playerId || !state.playerName) return setMessage("Load your bracket first.", "error");
+    if (!state.playerId || !state.playerName || !state.playerPinHash) return setMessage("Load your bracket with username + PIN first.", "error");
     if (state.config.locked) return setMessage("Predictions are locked.", "error");
 
-    const existing = state.allPredictions.find(entry => entry.playerId === state.playerId);
+    const existing = state.allPredictions.find(entry => entry.playerId === state.playerId || entry.usernameKey === state.playerId);
+    if (existing?.pinHash && existing.pinHash !== state.playerPinHash) {
+      return setMessage("PIN mismatch. Reload the bracket using the correct username and PIN.", "error");
+    }
     if (!existing && state.allPredictions.length >= SETTINGS.maxParticipants) {
       return setMessage(`This private game is set to ${SETTINGS.maxParticipants} participants. Ask the admin to raise the limit.`, "error");
     }
 
     const data = {
       playerId: state.playerId,
+      usernameKey: state.playerId,
       name: state.playerName,
+      pinHash: state.playerPinHash,
       picks: cleanPicks(state.userPicks),
       scorePredictions: cleanScoreMap(state.userScorePredictions),
       createdAt: existing?.createdAt || new Date().toISOString(),
@@ -671,14 +716,14 @@
       if (!existing) saveData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await state.predictionsRef.doc(state.playerId).set(saveData, { merge: true });
     } else {
-      const idx = state.allPredictions.findIndex(entry => entry.playerId === state.playerId);
+      const idx = state.allPredictions.findIndex(entry => entry.playerId === state.playerId || entry.usernameKey === state.playerId);
       if (idx >= 0) state.allPredictions[idx] = data;
       else state.allPredictions.push(data);
       saveLocalData();
       renderAll();
     }
 
-    setMessage("Saved.", "good");
+    setMessage("Saved to the online database.", "good");
   }
 
   async function saveConfig(partial) {
@@ -743,6 +788,15 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function usernameKey(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40);
   }
 
   async function sha256(text) {

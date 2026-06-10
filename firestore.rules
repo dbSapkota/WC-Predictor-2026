@@ -2,24 +2,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /games/{gameId} {
-      // Small private pool rules. Anyone signed in anonymously can read and update
-      // game settings, so share only with trusted friends.
+      // Small private pool rules. Anyone signed in anonymously can read the game
+      // settings and leaderboard. Share only with trusted friends.
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
 
       match /predictions/{playerId} {
         allow read: if true;
-        allow create, update: if request.auth != null
-          && request.resource.data.keys().hasOnly([
-            'playerId', 'name', 'picks', 'scorePredictions', 'createdAt', 'updatedAt'
-          ])
-          && request.resource.data.name is string
-          && request.resource.data.name.size() > 0
-          && request.resource.data.name.size() <= 40
-          && request.resource.data.picks is map
-          && request.resource.data.scorePredictions is map;
+
+        allow create: if request.auth != null && validPrediction(playerId);
+
+        // Keeps username + PIN tied to the same bracket document.
+        // This is for a trusted friend group, not high-security authentication.
+        allow update: if request.auth != null
+          && validPrediction(playerId)
+          && resource.data.pinHash == request.resource.data.pinHash;
+
         allow delete: if false;
       }
+    }
+
+    function validPrediction(playerId) {
+      return request.resource.data.keys().hasOnly([
+          'playerId', 'usernameKey', 'name', 'pinHash', 'picks',
+          'scorePredictions', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.playerId == playerId
+        && request.resource.data.usernameKey == playerId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.pinHash is string
+        && request.resource.data.pinHash.size() >= 24
+        && request.resource.data.pinHash.size() <= 80
+        && request.resource.data.picks is map
+        && request.resource.data.scorePredictions is map;
     }
   }
 }
