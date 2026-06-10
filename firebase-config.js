@@ -20,7 +20,7 @@ window.FIREBASE_CONFIG = {
 
 window.BRACKET_APP_SETTINGS = {
   eventId: "worldcup2026",
-  adminPassphrase: "pick-a-private-admin-password",
+  adminPassphrase: "dbs123",
   maxParticipants: 8
 };
 // Change these values here if you want to change the automatic scoring later.
